@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DropJS: dropdowns without the dependencies</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body id="top">
+
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>DropJS</a>
+
+      <!-- Navigation dropdown -->
+      <nav aria-label="Page sections">
+        <div id="nav-dropdown"></div>
+      </nav>
+
+      <!-- User profile dropdown -->
+      <div id="profile-dropdown" class="topbar-end"></div>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <section class="hero">
+      <h1>Dropdowns without the dependencies.</h1>
+      <p>
+        DropJS is a small prototype menu library in plain HTML, CSS and JavaScript.
+        Every dropdown on this page, including the two in the header, comes from
+        one <code>new DropJS()</code> call.
+      </p>
+    </section>
+
+    <!-- Basic dropdown -->
+    <section class="demo" id="basic">
+      <div class="demo-copy">
+        <h2>Quick start</h2>
+        <p>Point DropJS at an empty element and pass your options. It builds the button and the menu for you.</p>
+<pre><code>const menu = new DropJS({
+  target: "#dropdown",
+  label: "Menu",
+  options: [
+    { label: "Home", value: "home" },
+    { label: "Settings", value: "settings" },
+    { label: "Profile", value: "profile" }
+  ],
+  onSelect: (option) =&gt; notify(option.label)
+});
+
+menu.open();
+menu.close();</code></pre>
+        <p class="note">Keyboard: Enter or ↓ opens the menu, ↑ ↓ move, Enter selects, Esc closes.</p>
+      </div>
+
+      <div class="stage">
+        <div class="stage-actions">
+          <button class="btn" id="open-btn" type="button">menu.open()</button>
+          <button class="btn" id="close-btn" type="button">menu.close()</button>
+        </div>
+        <div id="dropdown"></div>
+      </div>
+    </section>
+
+    <!-- Searchable dropdown -->
+    <section class="demo" id="search">
+      <div class="demo-copy">
+        <h2>Searchable dropdown</h2>
+        <p>Add <code>searchable: true</code>. Type to filter the list, then press Enter to pick the first match. The button shows your choice.</p>
+<pre><code>new DropJS({
+  target: "#country-dropdown",
+  label: "Choose a country",
+  searchable: true,
+  placeholder: "Search countries",
+  emptyText: "No countries match",
+  options: countries
+});</code></pre>
+      </div>
+
+      <div class="stage stage--tall">
+        <div id="country-dropdown"></div>
+      </div>
+    </section>
+
+    <!-- Customization -->
+    <section class="demo" id="custom">
+      <div class="demo-copy">
+        <h2>Customization</h2>
+        <p>
+          The <code>style</code> option sets CSS variables: <code>accent</code>,
+          <code>bg</code>, <code>text</code>, <code>muted</code>, <code>border</code>
+          and <code>radius</code>. Change them any time with <code>setStyle()</code>.
+        </p>
+<pre><code>const themed = new DropJS({
+  target: "#themed",
+  label: "Sort by",
+  selectable: true,
+  style: { bg: "#16213e", text: "#eef1fb", accent: "#8ab4ff" },
+  options: [ ... ]
+});
+
+themed.setStyle({ accent: "#d6336c", bg: "#fff7f8" });</code></pre>
+      </div>
+
+      <div class="stage">
+        <div class="stage-actions" role="group" aria-label="Theme presets">
+          <button class="chip" type="button" data-theme="midnight" aria-pressed="true"><i style="--dot:#8ab4ff"></i>Midnight</button>
+          <button class="chip" type="button" data-theme="rose" aria-pressed="false"><i style="--dot:#d6336c"></i>Rose</button>
+          <button class="chip" type="button" data-theme="moss" aria-pressed="false"><i style="--dot:#2f8f46"></i>Moss</button>
+        </div>
+        <div id="themed"></div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="wrap footer">
+    DropJS prototype. Plain HTML, CSS and JavaScript, no libraries.
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="dropjs.js"></script>
+  <script>
+    // Shows a short message at the bottom of the screen
+    const toast = document.getElementById("toast");
+    let toastTimer;
+    function notify(message) {
+      toast.textContent = message;
+      toast.classList.add("is-visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2200);
+    }
+
+    // 1. Navigation dropdown: scrolls to a section
+    new DropJS({
+      target: "#nav-dropdown",
+      label: "Explore",
+      className: "dropjs--ghost",
+      options: [
+        { label: "Quick start", value: "#basic" },
+        { label: "Searchable", value: "#search" },
+        { label: "Customization", value: "#custom" },
+        { divider: true },
+        { label: "Back to top", value: "#top" }
+      ],
+      onSelect: (option) => {
+        document.querySelector(option.value).scrollIntoView();
+      }
+    });
+
+    // 2. User profile dropdown: custom button HTML, aligned to the right
+    new DropJS({
+      target: "#profile-dropdown",
+      label: "Account menu",
+      triggerHTML: '<span class="avatar">SR</span><span class="profile-name">Sam Rivera</span>',
+      className: "dropjs--ghost",
+      align: "right",
+      options: [
+        { label: "View profile", value: "profile" },
+        { label: "Account settings", value: "settings" },
+        { label: "Billing", value: "billing" },
+        { divider: true },
+        { label: "Sign out", value: "signout" }
+      ],
+      onSelect: (option) => notify(option.label + " (demo only)")
+    });
+
+    // 3. Basic dropdown with open() and close()
+    const menu = new DropJS({
+      target: "#dropdown",
+      label: "Menu",
+      options: [
+        { label: "Home", value: "home" },
+        { label: "Settings", value: "settings" },
+        { label: "Profile", value: "profile" }
+      ],
+      onSelect: (option) => notify("Selected " + option.label + " (value: " + option.value + ")")
+    });
+
+    document.getElementById("open-btn").addEventListener("click", () => menu.open());
+    document.getElementById("close-btn").addEventListener("click", () => menu.close());
+
+    // 4. Searchable dropdown
+    const countryNames = [
+      "Argentina", "Australia", "Brazil", "Canada", "Chile", "Egypt", "France",
+      "Germany", "India", "Indonesia", "Japan", "Kenya", "Mexico", "Netherlands",
+      "New Zealand", "Nigeria", "Norway", "Portugal", "South Korea", "Spain",
+      "Sweden", "Thailand", "Vietnam"
+    ];
+    const countries = countryNames.map((name) => ({
+      label: name,
+      value: name.toLowerCase().replace(/\s+/g, "-")
+    }));
+
+    new DropJS({
+      target: "#country-dropdown",
+      label: "Choose a country",
+      className: "dropjs--wide",
+      searchable: true,
+      placeholder: "Search countries",
+      emptyText: "No countries match",
+      options: countries
+    });
+
+    // 5. Customization: a themed dropdown plus preset buttons
+    const themes = {
+      midnight: { bg: "#16213e", text: "#eef1fb", muted: "#9aa7c7", border: "#2b3a63", accent: "#8ab4ff", radius: "14px" },
+      rose:     { bg: "#fff7f8", text: "#3b1a21", muted: "#a0707b", border: "#f1d3da", accent: "#d6336c", radius: "12px" },
+      moss:     { bg: "#f4f8f1", text: "#1f2d1a", muted: "#6b7f63", border: "#d3e3cb", accent: "#2f8f46", radius: "4px" }
+    };
+
+    const themed = new DropJS({
+      target: "#themed",
+      label: "Sort by",
+      className: "dropjs--wide",
+      selectable: true,
+      style: themes.midnight,
+      options: [
+        { label: "Newest", value: "newest" },
+        { label: "Oldest", value: "oldest" },
+        { label: "Most popular", value: "popular" },
+        { label: "A to Z", value: "az" }
+      ],
+      onSelect: (option) => notify("Sorted by " + option.label)
+    });
+
+    const chips = document.querySelectorAll("[data-theme]");
+    chips.forEach((chip) => {
+      chip.addEventListener("click", () => {
+        themed.setStyle(themes[chip.dataset.theme]);
+        chips.forEach((other) => other.setAttribute("aria-pressed", String(other === chip)));
+      });
+    });
+  </script>
+</body>
+</html>
