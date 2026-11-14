@@ -60,6 +60,7 @@ class DropJS {
 
     this._build();
     this._bind();
+    this._position(); // keeps even a closed menu inside the window
   }
 
   /* ---------------------------------------------------------
@@ -320,9 +321,7 @@ class DropJS {
     document.addEventListener("keydown", this._onDocKeydown);
 
     // Keep the menu on screen when the window changes size
-    this._onResize = () => {
-      if (this.isOpen) this._position();
-    };
+    this._onResize = () => this._position();
     window.addEventListener("resize", this._onResize);
   }
 

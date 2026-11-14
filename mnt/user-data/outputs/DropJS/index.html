@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DropJS is a tiny dropdown library in plain JavaScript: search, keyboard navigation, themes and smooth animation, with no dependencies.">
+  <title>DropJS: dropdowns without the dependencies</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="site.css">
+</head>
+<body id="top">
+
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z" fill="currentColor"/><path d="M3 12.5l9 5 9-5"/><path d="M3 16.5l9 5 9-5"/></svg></span>
+        DropJS
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#features">Features</a>
+        <a href="#demo">Live demo</a>
+        <a href="#how">How it works</a>
+        <a href="#quickstart">Quick start</a>
+      </nav>
+      <div id="nav-mobile" class="nav-mobile"></div>
+      <a class="btn btn--primary btn--sm" href="studio.html">Open Studio</a>
+    </div>
+  </header>
+
+  <main>
+
+    <!-- Hero -->
+    <section class="hero">
+      <div class="wrap hero-grid">
+        <div>
+          <span class="badge">prototype · plain HTML, CSS &amp; JS</span>
+          <h1>Dropdowns without the <span class="grad">dependencies.</span></h1>
+          <p class="lead">
+            DropJS is a small dropdown library in vanilla JavaScript. Menus, searchable selects,
+            keyboard navigation, themes and smooth animation, all from one class and one stylesheet.
+          </p>
+          <div class="cta">
+            <a class="btn btn--primary" href="studio.html">Open the Studio</a>
+            <a class="btn btn--ghost" href="#demo">Try the live demo</a>
+          </div>
+          <div class="install">
+            <span class="prompt" aria-hidden="true">&lt;/&gt;</span>
+            <code id="install-code">&lt;script src="dropjs.js"&gt;&lt;/script&gt;</code>
+            <button class="copy" type="button" data-copy="#install-code">Copy</button>
+          </div>
+        </div>
+
+        <div class="hero-card">
+          <div class="card-bar"><span class="live-dot"></span>live preview<span class="hint">click anything</span></div>
+          <div class="mini-nav">
+            <div id="h-nav"></div>
+            <div id="h-profile"></div>
+          </div>
+          <div class="mini-body">
+            <span class="mini-label">select</span>
+            <div id="h-sort"></div>
+            <span class="mini-label">searchable</span>
+            <div id="h-country"></div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Numbers -->
+    <div class="wrap">
+      <ul class="stats">
+        <li><span class="num grad">0</span><span class="label">dependencies</span></li>
+        <li><span class="num grad">~430</span><span class="label">lines of JavaScript</span></li>
+        <li><span class="num grad">12</span><span class="label">settings</span></li>
+        <li><span class="num grad">6</span><span class="label">methods</span></li>
+      </ul>
+    </div>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">01 / features</p>
+          <h2>Everything a dropdown needs, nothing it doesn't</h2>
+          <p>Open, close, search, choose and style. Each piece is small enough to read in one sitting.</p>
+        </div>
+
+        <div class="cards">
+          <article class="card card--mint">
+            <h3>Behavior</h3>
+            <ul>
+              <li><strong>Open and close</strong> with a click, or call <code>open()</code> and <code>close()</code> from code</li>
+              <li><strong>Click outside</strong> or press Esc to close the menu</li>
+              <li><strong>Many instances</strong> on one page, each with its own options</li>
+              <li><strong>Searchable</strong> lists that filter as you type</li>
+              <li><strong>Selectable</strong> mode where the button shows your choice</li>
+              <li><strong>Dividers</strong> to group related items</li>
+            </ul>
+          </article>
+
+          <article class="card card--lime">
+            <h3>Keyboard &amp; access</h3>
+            <ul>
+              <li><strong>Arrow keys</strong> move through options and wrap around</li>
+              <li><strong>Home / End</strong> jump to the first or last option</li>
+              <li><strong>Enter or Space</strong> chooses the highlighted option</li>
+              <li><strong>Esc</strong> closes and returns focus to the button</li>
+              <li><strong>Screen readers</strong> get roles, <code>aria-expanded</code> and active-item hints</li>
+              <li><strong>Closed menus</strong> are removed from the Tab order</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3 class="grad">Look &amp; feel</h3>
+            <ul>
+              <li><strong>CSS variables</strong> for accent, background, text, border and radius</li>
+              <li><strong>setStyle()</strong> changes colours while the page is running</li>
+              <li><strong>Smooth motion</strong> that switches off for reduced-motion users</li>
+              <li><strong>Responsive</strong> menus that slide back on screen or open upward</li>
+              <li><strong>Variants</strong> such as a ghost nav button and a wide select</li>
+              <li><strong>Custom buttons</strong> with your own HTML, like an avatar</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live demo -->
+    <section class="section" id="demo">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">02 / live demo</p>
+          <h2>Pick an example and use it</h2>
+          <p>Every example is a real DropJS dropdown. The code underneath is generated from the same settings.</p>
+        </div>
+
+        <div class="demo">
+          <div class="demo-tabs" id="demo-tabs" role="tablist" aria-label="Examples"></div>
+          <div class="demo-panel">
+            <div class="demo-stage" id="demo-stage" role="tabpanel"></div>
+            <div class="code">
+              <div class="code-bar"><span>example.js</span><button class="copy" type="button" data-copy="#demo-code">Copy</button></div>
+              <pre><code id="demo-code"></code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">03 / how it works</p>
+          <h2>One class, four small jobs</h2>
+          <p>DropJS turns a plain element into a button and a menu, listens for events, and keeps the menu on screen.</p>
+        </div>
+
+        <div class="flow">
+          <div class="flow-col">
+            <span class="flow-label">you write</span>
+            <div class="flow-box flow-box--you">
+              <code>new DropJS({<br>&nbsp;&nbsp;target,<br>&nbsp;&nbsp;options<br>})</code>
+              <p>A target element and a list of options.</p>
+            </div>
+          </div>
+
+          <div class="flow-arrow" aria-hidden="true"></div>
+
+          <div class="flow-col">
+            <span class="flow-label">dropjs.js</span>
+            <div class="flow-box flow-box--core">
+              <ul class="core-list">
+                <li><code>_build()</code><span>creates the button, menu and search box</span></li>
+                <li><code>_bind()</code><span>listens for clicks, keys and outside clicks</span></li>
+                <li><code>_renderList()</code><span>draws and filters the options</span></li>
+                <li><code>_position()</code><span>keeps the menu inside the window</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="flow-arrow" aria-hidden="true"></div>
+
+          <div class="flow-col">
+            <span class="flow-label">the page gets</span>
+            <div class="flow-box">
+              <div class="mock-trigger"><span>Menu</span><span aria-hidden="true">⌃</span></div>
+              <div class="mock-menu" aria-hidden="true">
+                <div class="mock-item">Home</div>
+                <div class="mock-item is-active">Settings</div>
+                <div class="mock-item">Profile</div>
+              </div>
+              <p>A button and an animated menu.</p>
+            </div>
+          </div>
+        </div>
+
+        <ul class="chips" aria-label="Events DropJS listens for">
+          <li>click</li>
+          <li>pointerdown (outside)</li>
+          <li>keydown (Esc, arrows, Enter)</li>
+          <li>input (search)</li>
+          <li>resize</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Quick start -->
+    <section class="section" id="quickstart">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">04 / quick start</p>
+          <h2>Up and running in three steps</h2>
+          <p>No build tools, no install. Copy two files next to your page.</p>
+        </div>
+
+        <div class="start">
+          <ol class="steps">
+            <li>
+              <h3>Add the files</h3>
+              <p>Link <code>style.css</code> and <code>dropjs.js</code> in your page.</p>
+            </li>
+            <li>
+              <h3>Add an empty element</h3>
+              <p>DropJS builds the button and menu inside it.</p>
+            </li>
+            <li>
+              <h3>Create the dropdown</h3>
+              <p>Pass your options. Call <code>open()</code> and <code>close()</code> whenever you like.</p>
+            </li>
+          </ol>
+
+          <div class="code">
+            <div class="code-bar"><span>index.html</span><button class="copy" type="button" data-copy="#start-code">Copy</button></div>
+            <pre><code id="start-code">&lt;link rel="stylesheet" href="style.css"&gt;
+
+&lt;div id="dropdown"&gt;&lt;/div&gt;
+
+&lt;script src="dropjs.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const menu = new DropJS({
+    target: "#dropdown",
+    label: "Menu",
+    options: [
+      { label: "Home", value: "home" },
+      { label: "Settings", value: "settings" },
+      { label: "Profile", value: "profile" }
+    ]
+  });
+
+  menu.open();
+  menu.close();
+&lt;/script&gt;</code></pre>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>DropJS is a prototype built with plain HTML, CSS and JavaScript.</span>
+      <nav aria-label="Footer">
+        <a href="studio.html">Studio</a>
+        <a href="#demo">Demo</a>
+        <a href="#quickstart">Quick start</a>
+        <a href="#top">Back to top</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="dropjs.js"></script>
+  <script>
+  (function () {
+    "use strict";
+
+    const $ = (selector, root) => (root || document).querySelector(selector);
+    const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
+
+    // Friendly hint if the sibling files were not found
+    const cssLoaded = getComputedStyle(document.body).backgroundColor === "rgb(8, 12, 11)";
+    if (typeof DropJS === "undefined" || !cssLoaded) {
+      document.body.insertAdjacentHTML("afterbegin",
+        '<p style="padding:1rem;margin:0;font:16px sans-serif;background:#fff3b0;color:#222">' +
+        "style.css, site.css or dropjs.js was not found. Keep index.html, style.css, site.css and dropjs.js " +
+        "in the same folder, or open standalone/index.html, which needs nothing else.</p>");
+      if (typeof DropJS === "undefined") return;
+    }
+
+    /* ------------------------------------------------------
+       Small helpers: toast, copy buttons, code colouring
+       ------------------------------------------------------ */
+    const toast = $("#toast");
+    let toastTimer;
+    function notify(message) {
+      toast.textContent = message;
+      toast.classList.add("is-visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2200);
+    }
+
+    // Colours strings, keywords and comments in a <code> element
+    function highlight(el) {
+      const text = el.textContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const pattern = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(&lt;\/?[a-zA-Z][a-zA-Z0-9]*)|\b(new|const|let|true|false)\b/g;
+      el.innerHTML = text.replace(pattern, (match, comment, string, tag, keyword) => {
+        if (comment) return '<span class="c">' + comment + "</span>";
+        if (string) return '<span class="s">' + string + "</span>";
+        return '<span class="k">' + (tag || keyword) + "</span>";
+      });
+    }
+
+    $$("[data-copy]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const text = $(button.dataset.copy).textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch (error) {
+          const area = document.createElement("textarea");
+          area.value = text;
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          area.remove();
+        }
+        button.textContent = "Copied";
+        setTimeout(() => { button.textContent = "Copy"; }, 1500);
+      });
+    });
+
+    function goTo(selector) {
+      const target = $(selector);
+      if (target) target.scrollIntoView();
+    }
+
+    const AVATAR = '<span class="avatar">SR</span><span class="profile-name">Sam Rivera</span>';
+    const COUNTRIES = [
+      "Argentina", "Australia", "Brazil", "Canada", "Chile", "Egypt", "France", "Germany",
+      "India", "Indonesia", "Japan", "Kenya", "Mexico", "Netherlands", "New Zealand", "Nigeria",
+      "Norway", "Portugal", "South Korea", "Spain", "Sweden", "Thailand", "Vietnam"
+    ].map((name) => ({ label: name, value: name.toLowerCase().replace(/\s+/g, "-") }));
+
+    const PROFILE_OPTIONS = [
+      { label: "View profile", value: "profile" },
+      { label: "Account settings", value: "settings" },
+      { label: "Billing", value: "billing" },
+      { divider: true },
+      { label: "Sign out", value: "signout" }
+    ];
+
+    const SECTION_OPTIONS = [
+      { label: "Features", value: "#features" },
+      { label: "Live demo", value: "#demo" },
+      { label: "How it works", value: "#how" },
+      { label: "Quick start", value: "#quickstart" }
+    ];
+
+    /* ------------------------------------------------------
+       Mobile navigation (the site uses DropJS itself)
+       ------------------------------------------------------ */
+    new DropJS({
+      target: "#nav-mobile",
+      label: "Menu",
+      className: "dropjs--ghost",
+      align: "right",
+      options: SECTION_OPTIONS,
+      onSelect: (option) => goTo(option.value)
+    });
+
+    /* ------------------------------------------------------
+       Hero preview card
+       ------------------------------------------------------ */
+    new DropJS({
+      target: "#h-nav",
+      label: "Explore",
+      className: "dropjs--ghost",
+      options: SECTION_OPTIONS,
+      onSelect: (option) => goTo(option.value)
+    });
+
+    new DropJS({
+      target: "#h-profile",
+      label: "Account menu",
+      triggerHTML: AVATAR,
+      className: "dropjs--ghost",
+      align: "right",
+      options: PROFILE_OPTIONS,
+      onSelect: (option) => notify(option.label + " (demo only)")
+    });
+
+    new DropJS({
+      target: "#h-sort",
+      label: "Sort by",
+      className: "dropjs--wide",
+      selectable: true,
+      options: [
+        { label: "Newest", value: "newest" },
+        { label: "Oldest", value: "oldest" },
+        { label: "Most popular", value: "popular" },
+        { label: "A to Z", value: "az" }
+      ]
+    });
+
+    new DropJS({
+      target: "#h-country",
+      label: "Choose a country",
+      className: "dropjs--wide",
+      searchable: true,
+      placeholder: "Search countries",
+      options: COUNTRIES
+    });
+
+    /* ------------------------------------------------------
+       Live demo with tabs. The code shown is built from the
+       same settings object that creates the dropdown.
+       ------------------------------------------------------ */
+    const EXAMPLES = [
+      {
+        tab: "Navigation",
+        note: "Ghost style with a divider",
+        config: {
+          label: "Explore",
+          className: "dropjs--ghost",
+          options: SECTION_OPTIONS.concat([{ divider: true }, { label: "Back to top", value: "#top" }])
+        },
+        go: true
+      },
+      {
+        tab: "Profile",
+        note: "Custom button, aligned right",
+        config: { label: "Account menu", triggerHTML: AVATAR, className: "dropjs--ghost", align: "right", options: PROFILE_OPTIONS }
+      },
+      {
+        tab: "Searchable",
+        note: "Type to filter, Enter to pick",
+        config: { label: "Choose a country", className: "dropjs--wide", searchable: true, placeholder: "Search countries", options: COUNTRIES }
+      },
+      {
+        tab: "Custom theme",
+        note: "Your colours and radius",
+        config: {
+          label: "Sort by",
+          className: "dropjs--wide",
+          selectable: true,
+          style: { accent: "#ffb454", bg: "#1a1410", text: "#fbeedd", muted: "#a8927c", border: "#3a2d22", radius: "4px" },
+          options: [
+            { label: "Newest", value: "newest" },
+            { label: "Oldest", value: "oldest" },
+            { label: "Most popular", value: "popular" },
+            { label: "A to Z", value: "az" }
+          ]
+        }
+      }
+    ];
+
+    function codeFor(config) {
+      const lines = ['  target: "#dropdown"'];
+      Object.keys(config).forEach((key) => {
+        if (key === "options") return;
+        const value = JSON.stringify(config[key], null, key === "style" ? 2 : 0);
+        lines.push("  " + key + ": " + value.replace(/\n/g, "\n  "));
+      });
+      lines.push("  options: [\n" + config.options.map((o) => {
+        return "    " + (o.divider ? "{ divider: true }" : "{ label: " + JSON.stringify(o.label) + ", value: " + JSON.stringify(o.value) + " }");
+      }).join(",\n") + "\n  ]");
+      lines.push("  onSelect: (option) => console.log(option.value)");
+      return "new DropJS({\n" + lines.join(",\n") + "\n});";
+    }
+
+    const tabsEl = $("#demo-tabs");
+    const stage = $("#demo-stage");
+    const codeEl = $("#demo-code");
+    let currentDropdown = null;
+
+    function showExample(index) {
+      const example = EXAMPLES[index];
+      if (currentDropdown) currentDropdown.destroy();
+      stage.innerHTML = "";
+      const host = document.createElement("div");
+      stage.style.justifyContent = example.config.align === "right" ? "flex-end" : "flex-start";
+      stage.appendChild(host);
+
+      currentDropdown = new DropJS(Object.assign({}, example.config, {
+        target: host,
+        onSelect: (option) => {
+          if (example.go && option.value.charAt(0) === "#") goTo(option.value);
+          else notify("Selected " + option.label);
+        }
+      }));
+
+      codeEl.textContent = codeFor(example.config);
+      highlight(codeEl);
+
+      $$(".demo-tab", tabsEl).forEach((tab, i) => {
+        tab.setAttribute("aria-selected", String(i === index));
+        tab.tabIndex = i === index ? 0 : -1;
+      });
+      stage.setAttribute("aria-labelledby", "demo-tab-" + index);
+    }
+
+    EXAMPLES.forEach((example, index) => {
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.id = "demo-tab-" + index;
+      tab.className = "demo-tab";
+      tab.setAttribute("role", "tab");
+      tab.innerHTML = "<strong></strong><span></span>";
+      $("strong", tab).textContent = example.tab;
+      $("span", tab).textContent = example.note;
+      tab.addEventListener("click", () => showExample(index));
+      tab.addEventListener("keydown", (e) => {
+        const keys = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+        if (!(e.key in keys)) return;
+        e.preventDefault();
+        const next = (index + keys[e.key] + EXAMPLES.length) % EXAMPLES.length;
+        showExample(next);
+        $$(".demo-tab", tabsEl)[next].focus();
+      });
+      tabsEl.appendChild(tab);
+    });
+
+    showExample(0);
+    highlight($("#start-code"));
+  })();
+  </script>
+</body>
+</html>

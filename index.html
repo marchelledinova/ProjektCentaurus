@@ -3,128 +3,1996 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="DropJS is a tiny dropdown library in plain JavaScript: search, keyboard navigation, themes and smooth animation, with no dependencies.">
   <title>DropJS: dropdowns without the dependencies</title>
-  <link rel="stylesheet" href="style.css">
+  <style>
+/* ==========================================================
+   PART 1: DropJS component styles
+   Customize with CSS variables (or setStyle() / the style option):
+   accent, bg, text, muted, border, radius
+   ========================================================== */
+
+.dropjs {
+  --dropjs-accent: #2de2b0;
+  --dropjs-bg: #121a18;
+  --dropjs-text: #e6efec;
+  --dropjs-muted: #8a9b96;
+  --dropjs-border: #2b3b36;
+  --dropjs-radius: 10px;
+
+  position: relative;
+  display: inline-block;
+  font-size: 0.95rem;
+  color: var(--dropjs-text);
+}
+
+.dropjs.is-open {
+  z-index: 50; /* open menus sit above everything after them */
+}
+
+/* ---- Button ---- */
+
+.dropjs-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  background: var(--dropjs-bg);
+  border: 1px solid var(--dropjs-border);
+  border-radius: var(--dropjs-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.dropjs-trigger:hover {
+  border-color: color-mix(in srgb, var(--dropjs-text) 65%, var(--dropjs-border));
+}
+
+.dropjs-trigger:focus-visible {
+  outline: 2px solid var(--dropjs-accent);
+  outline-offset: 2px;
+}
+
+.dropjs.is-open .dropjs-trigger {
+  border-color: var(--dropjs-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dropjs-accent) 22%, transparent);
+}
+
+.dropjs-trigger-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dropjs-chevron {
+  flex: none;
+  color: var(--dropjs-muted);
+  transition: transform 0.2s ease;
+}
+
+.dropjs.is-open .dropjs-chevron {
+  transform: rotate(180deg);
+}
+
+/* select mode: grey text until something is chosen */
+.dropjs--select:not(.has-value) .dropjs-trigger-content {
+  color: var(--dropjs-muted);
+}
+
+/* ---- Variants you can add with className ---- */
+
+.dropjs--wide {
+  display: block;
+  width: min(100%, 20rem);
+}
+
+.dropjs--ghost .dropjs-trigger {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dropjs--ghost .dropjs-trigger:hover,
+.dropjs--ghost.is-open .dropjs-trigger {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: inset 0 -3px 0 var(--dropjs-accent); /* red underline, like a site nav */
+}
+
+/* ---- Menu (animated open and close) ---- */
+
+.dropjs-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  min-width: max(100%, 12rem);
+  max-width: calc(100vw - 16px);
+  padding: 0.35rem;
+  background: var(--dropjs-bg);
+  border: 1px solid var(--dropjs-border);
+  border-radius: var(--dropjs-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 40px -12px rgba(0, 0, 0, 0.7);
+
+  /* closed state */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
+}
+
+.dropjs--align-right .dropjs-menu {
+  transform-origin: top right;
+}
+
+/* opens upwards when there is no room below (JS adds .is-up) */
+.dropjs.is-up .dropjs-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateY(6px) scale(0.98);
+  transform-origin: bottom left;
+}
+
+.dropjs--align-right.is-up .dropjs-menu {
+  transform-origin: bottom right;
+}
+
+/* open state (must stay after the rules above) */
+.dropjs.is-open .dropjs-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition-delay: 0s;
+}
+
+/* ---- Search box ---- */
+
+.dropjs-search {
+  padding: 0.15rem 0.15rem 0.4rem;
+}
+
+.dropjs-input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 1rem; /* 16px stops iOS zooming in on focus */
+  color: inherit;
+  background: color-mix(in srgb, var(--dropjs-text) 4%, var(--dropjs-bg));
+  border: 1px solid var(--dropjs-border);
+  border-radius: max(4px, calc(var(--dropjs-radius) - 4px));
+  outline: none;
+}
+
+.dropjs-input:focus {
+  border-color: var(--dropjs-accent);
+}
+
+.dropjs-input::placeholder {
+  color: var(--dropjs-muted);
+}
+
+/* ---- List ---- */
+
+.dropjs-list {
+  position: relative; /* lets the script measure item positions */
+  max-height: min(15rem, 50vh);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+.dropjs-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.65rem;
+  white-space: nowrap;
+  border-radius: max(4px, calc(var(--dropjs-radius) - 4px));
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropjs-item.is-active {
+  /* a tint of the accent (override with --dropjs-active) */
+  background: var(--dropjs-active, color-mix(in srgb, var(--dropjs-accent) 16%, var(--dropjs-bg)));
+}
+
+.dropjs-item.is-selected {
+  color: var(--dropjs-accent);
+  font-weight: 600;
+}
+
+/* check mark on the chosen option */
+.dropjs-item.is-selected::after {
+  content: "";
+  flex: none;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.dropjs-divider {
+  height: 1px;
+  margin: 0.3rem 0.25rem;
+  background: var(--dropjs-border);
+}
+
+.dropjs-empty {
+  padding: 0.75rem 0.65rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--dropjs-muted);
+}
+
+/* bigger touch targets on phones */
+@media (max-width: 480px) {
+  .dropjs-item {
+    padding: 0.7rem 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropjs-trigger,
+  .dropjs-chevron,
+  .dropjs-menu {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* ==========================================================
+   DropJS website styles (index.html only)
+   Dark theme: green-black surfaces, mint-to-lime accent
+   ========================================================== */
+
+:root {
+  color-scheme: dark;
+  --bg: #080c0b;
+  --panel: #0d1311;
+  --card: #101715;
+  --raise: #17211e;
+  --line: #1e2a27;
+  --line-2: #2b3b36;
+  --text: #e6efec;
+  --text-soft: #a3b4ae;
+  --muted: #7a8c86;
+  --mint: #2de2b0;
+  --lime: #b4f25a;
+  --grad: linear-gradient(135deg, var(--mint), var(--lime));
+  --on-accent: #06120e;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  scrollbar-color: var(--line-2) transparent;
+}
+
+html {
+  scroll-padding-top: 5rem;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+  overflow-x: clip;
+}
+
+a {
+  color: inherit;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a:focus-visible,
+button:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 3px;
+}
+
+code,
+pre {
+  font-family: var(--mono);
+}
+
+.wrap {
+  width: min(1120px, 100% - 3rem);
+  margin-inline: auto;
+}
+
+.grad {
+  color: transparent;
+  background: var(--grad);
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+/* ---- Buttons ---- */
+
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  height: 48px;
+  padding: 0 1.5rem;
+  font-weight: 600;
+  white-space: nowrap;
+  text-decoration: none;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  cursor: pointer;
+  transition: filter 0.15s, box-shadow 0.15s, border-color 0.15s, background-color 0.15s;
+}
+
+.btn--primary {
+  color: var(--on-accent);
+  background: var(--grad);
+  box-shadow: 0 10px 30px -12px rgba(45, 226, 176, 0.75);
+}
+
+.btn--primary:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 14px 36px -10px rgba(45, 226, 176, 0.9);
+}
+
+.btn--ghost {
+  background: var(--card);
+  border-color: var(--line-2);
+}
+
+.btn--ghost:hover {
+  background: var(--raise);
+  border-color: var(--mint);
+}
+
+.btn--sm {
+  height: 40px;
+  padding: 0 1.1rem;
+  border-radius: 12px;
+}
+
+/* ---- Navigation ---- */
+
+.nav {
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  background: rgba(8, 12, 11, 0.82);
+  -webkit-backdrop-filter: blur(12px);
+  backdrop-filter: blur(12px);
+  border-bottom: 1px solid var(--line);
+}
+
+.nav-inner {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 66px;
+}
+
+.brand {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-right: auto;
+  font-size: 1.25rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  text-decoration: none;
+}
+
+.brand-mark {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  color: var(--on-accent);
+  background: var(--grad);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px -6px rgba(45, 226, 176, 0.6);
+}
+
+.nav-links {
+  display: flex;
+  gap: 0.25rem;
+}
+
+.nav-links a {
+  padding: 0.45rem 0.85rem;
+  color: var(--text-soft);
+  text-decoration: none;
+  border-radius: 10px;
+  transition: color 0.15s, background-color 0.15s;
+}
+
+.nav-links a:hover {
+  color: var(--text);
+  background: var(--raise);
+}
+
+.nav-mobile {
+  display: none;
+}
+
+/* ---- Hero ---- */
+
+.hero {
+  position: relative;
+  padding: 5.5rem 0 4.5rem;
+}
+
+.hero::before {
+  content: "";
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 640px;
+  pointer-events: none;
+  background:
+    radial-gradient(55% 60% at 70% 0%, rgba(45, 226, 176, 0.14), transparent 70%),
+    radial-gradient(rgba(255, 255, 255, 0.06) 1px, transparent 1px);
+  background-size: auto, 28px 28px;
+  -webkit-mask-image: linear-gradient(#000 30%, transparent);
+  mask-image: linear-gradient(#000 30%, transparent);
+}
+
+.hero-grid {
+  position: relative;
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(0, 0.9fr);
+  gap: 3.5rem;
+  align-items: center;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  padding: 0.35rem 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--mint);
+  background: rgba(45, 226, 176, 0.08);
+  border: 1px solid rgba(45, 226, 176, 0.35);
+  border-radius: 999px;
+}
+
+.hero h1 {
+  margin: 1.4rem 0 1.25rem;
+  font-size: clamp(2.7rem, 5.6vw, 4.6rem);
+  font-weight: 800;
+  line-height: 1.02;
+  letter-spacing: -0.045em;
+}
+
+.lead {
+  max-width: 50ch;
+  margin: 0;
+  font-size: 1.15rem;
+  color: var(--text-soft);
+}
+
+.cta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  margin: 2rem 0 1.5rem;
+}
+
+.install {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  max-width: 100%;
+  padding: 0.5rem 0.5rem 0.5rem 1rem;
+  font-size: 0.85rem;
+  background: var(--card);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+}
+
+.install .prompt {
+  color: var(--mint);
+}
+
+.install code {
+  overflow-x: auto;
+  white-space: nowrap;
+}
+
+.copy {
+  flex: none;
+  padding: 0.3rem 0.7rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--text-soft);
+  background: var(--raise);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: color 0.15s, border-color 0.15s;
+}
+
+.copy:hover {
+  color: var(--text);
+  border-color: var(--mint);
+}
+
+/* live preview card in the hero */
+
+.hero-card {
+  padding: 1.1rem 1.5rem 2rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  box-shadow: 0 40px 80px -40px rgba(0, 0, 0, 0.9), 0 0 0 1px rgba(255, 255, 255, 0.02);
+}
+
+.card-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding-bottom: 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.card-bar .hint {
+  margin-left: auto;
+}
+
+.live-dot {
+  width: 8px;
+  height: 8px;
+  background: var(--mint);
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(45, 226, 176, 0.6);
+  animation: pulse 2.4s ease-out infinite;
+}
+
+@keyframes pulse {
+  70% {
+    box-shadow: 0 0 0 9px rgba(45, 226, 176, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(45, 226, 176, 0);
+  }
+}
+
+.mini-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.35rem 0.25rem 0.6rem;
+  border-top: 1px solid var(--line);
+  border-bottom: 1px solid var(--line);
+}
+
+.mini-body {
+  display: grid;
+  gap: 0.5rem;
+  min-height: 15.5rem;
+  padding-top: 1.25rem;
+  align-content: start;
+}
+
+.mini-label {
+  margin-top: 0.6rem;
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--muted);
+}
+
+.mini-label:first-child {
+  margin-top: 0;
+}
+
+.mini-body .dropjs--wide {
+  width: 100%;
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--dropjs-accent, var(--mint));
+  border-radius: 50%;
+}
+
+/* ---- Stats ---- */
+
+.stats {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 20px;
+}
+
+.stats li {
+  padding: 1.6rem 1.5rem;
+  border-left: 1px solid var(--line);
+}
+
+.stats li:first-child {
+  border-left: 0;
+}
+
+.stats .num {
+  display: block;
+  font-size: clamp(2rem, 3.4vw, 2.8rem);
+  font-weight: 800;
+  line-height: 1.1;
+  letter-spacing: -0.03em;
+}
+
+.stats .label {
+  display: block;
+  margin-top: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+/* ---- Sections ---- */
+
+.section {
+  padding: 5.5rem 0 0;
+}
+
+.section-head {
+  max-width: 40rem;
+  margin-bottom: 2.75rem;
+}
+
+.eyebrow {
+  margin: 0 0 0.9rem;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  color: var(--mint);
+}
+
+.section h2 {
+  margin: 0 0 0.9rem;
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 800;
+  line-height: 1.08;
+  letter-spacing: -0.035em;
+}
+
+.section-head p:not(.eyebrow) {
+  margin: 0;
+  font-size: 1.08rem;
+  color: var(--text-soft);
+}
+
+/* features */
+
+.cards {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.25rem;
+}
+
+.card {
+  padding: 1.9rem 1.75rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 22px;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.card:hover {
+  border-color: rgba(45, 226, 176, 0.4);
+  transform: translateY(-3px);
+}
+
+.card h3 {
+  margin: 0 0 1.4rem;
+  padding-bottom: 1.1rem;
+  font-size: 1.2rem;
+  letter-spacing: -0.01em;
+  border-bottom: 1px solid var(--line);
+}
+
+.card--mint h3 {
+  color: var(--mint);
+}
+
+.card--lime h3 {
+  color: var(--lime);
+}
+
+.card ul {
+  display: grid;
+  gap: 1.05rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.card li {
+  position: relative;
+  padding-left: 1.35rem;
+  font-size: 0.97rem;
+  color: var(--text-soft);
+}
+
+.card li::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0.55em;
+  width: 7px;
+  height: 7px;
+  background: var(--grad);
+  border-radius: 50%;
+}
+
+.card li strong {
+  color: var(--text);
+}
+
+.card code {
+  padding: 0.1em 0.4em;
+  font-size: 0.85em;
+  color: var(--mint);
+  background: rgba(45, 226, 176, 0.09);
+  border-radius: 5px;
+}
+
+/* live demo */
+
+.demo {
+  display: grid;
+  grid-template-columns: 240px minmax(0, 1fr);
+  gap: 1.5rem;
+}
+
+.demo-tabs {
+  display: grid;
+  align-content: start;
+  gap: 0.5rem;
+}
+
+.demo-tab {
+  display: grid;
+  gap: 0.15rem;
+  padding: 0.9rem 1rem;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s;
+}
+
+.demo-tab:hover {
+  border-color: var(--line-2);
+}
+
+.demo-tab strong {
+  font-size: 1rem;
+}
+
+.demo-tab span {
+  font-size: 0.82rem;
+  color: var(--muted);
+}
+
+.demo-tab[aria-selected="true"] {
+  background: rgba(45, 226, 176, 0.09);
+  border-color: var(--mint);
+}
+
+.demo-panel {
+  display: grid;
+  gap: 1rem;
+  min-width: 0;
+}
+
+.demo-stage {
+  display: flex;
+  align-items: flex-start;
+  min-height: 21rem;
+  padding: 2rem;
+  background-color: var(--card);
+  background-image: radial-gradient(circle, rgba(255, 255, 255, 0.07) 1px, transparent 1.3px);
+  background-size: 20px 20px;
+  border: 1px solid var(--line);
+  border-radius: 22px;
+}
+
+.demo-stage .dropjs--wide {
+  width: min(100%, 20rem);
+}
+
+/* code blocks */
+
+.code {
+  min-width: 0;
+  overflow: hidden;
+  background: #070b0a;
+  border: 1px solid var(--line);
+  border-radius: 16px;
+}
+
+.code-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.6rem 0.5rem 1rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+  border-bottom: 1px solid var(--line);
+}
+
+.code pre {
+  margin: 0;
+  padding: 1.1rem 1.25rem;
+  overflow-x: auto;
+  font-size: 0.85rem;
+  line-height: 1.75;
+  color: #cfe3dc;
+}
+
+.code pre .s {
+  color: var(--mint);
+}
+
+.code pre .k {
+  color: var(--lime);
+}
+
+.code pre .c {
+  color: var(--muted);
+}
+
+/* how it works */
+
+.flow {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1.3fr) auto minmax(0, 1fr);
+  gap: 1rem;
+  align-items: stretch;
+}
+
+.flow-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.6rem;
+}
+
+.flow-label {
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.flow-box {
+  flex: 1;
+  padding: 1.25rem;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 18px;
+}
+
+.flow-box--core {
+  background: linear-gradient(160deg, rgba(45, 226, 176, 0.11), rgba(180, 242, 90, 0.03));
+  border-color: rgba(45, 226, 176, 0.4);
+}
+
+.flow-box--you code {
+  display: block;
+  font-size: 0.85rem;
+  line-height: 1.7;
+  color: var(--text);
+}
+
+.flow-box--you p,
+.flow-box > p {
+  margin: 0.9rem 0 0;
+  font-size: 0.9rem;
+  color: var(--text-soft);
+}
+
+.core-list {
+  display: grid;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.core-list li {
+  display: grid;
+  gap: 0.1rem;
+  padding: 0.7rem 0;
+  border-bottom: 1px solid rgba(45, 226, 176, 0.18);
+}
+
+.core-list li:first-child {
+  padding-top: 0;
+}
+
+.core-list li:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.core-list code {
+  color: var(--mint);
+}
+
+.core-list span {
+  font-size: 0.88rem;
+  color: var(--text-soft);
+}
+
+.flow-arrow {
+  position: relative;
+  align-self: center;
+  width: 46px;
+  height: 2px;
+  background: linear-gradient(90deg, var(--line-2), var(--mint));
+}
+
+.flow-arrow::after {
+  content: "";
+  position: absolute;
+  right: -1px;
+  top: 50%;
+  width: 9px;
+  height: 9px;
+  border-top: 2px solid var(--mint);
+  border-right: 2px solid var(--mint);
+  transform: translateY(-50%) rotate(45deg);
+}
+
+.mock-trigger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.55rem 0.8rem;
+  font-weight: 500;
+  background: #121a18;
+  border: 1px solid var(--mint);
+  border-radius: 10px;
+  box-shadow: 0 0 0 3px rgba(45, 226, 176, 0.18);
+}
+
+.mock-menu {
+  margin-top: 0.5rem;
+  padding: 0.3rem;
+  background: #121a18;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+  box-shadow: 0 14px 30px -12px rgba(0, 0, 0, 0.8);
+}
+
+.mock-item {
+  padding: 0.4rem 0.6rem;
+  font-size: 0.88rem;
+  color: var(--text-soft);
+  border-radius: 6px;
+}
+
+.mock-item.is-active {
+  color: var(--text);
+  background: rgba(45, 226, 176, 0.16);
+}
+
+.chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 0.5rem;
+  margin: 1.75rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.chips li {
+  padding: 0.3rem 0.8rem;
+  font-family: var(--mono);
+  font-size: 0.78rem;
+  color: var(--text-soft);
+  border: 1px solid var(--line-2);
+  border-radius: 999px;
+}
+
+/* quick start */
+
+.start {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 3rem;
+  align-items: start;
+}
+
+.steps {
+  display: grid;
+  gap: 1.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  counter-reset: step;
+}
+
+.steps li {
+  position: relative;
+  padding-left: 3.4rem;
+  counter-increment: step;
+}
+
+.steps li::before {
+  content: counter(step);
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  font-weight: 800;
+  color: var(--on-accent);
+  background: var(--grad);
+  border-radius: 12px;
+}
+
+.steps h3 {
+  margin: 0.15rem 0 0.25rem;
+  font-size: 1.1rem;
+}
+
+.steps p {
+  margin: 0;
+  color: var(--text-soft);
+}
+
+.steps code {
+  font-size: 0.85em;
+  color: var(--mint);
+}
+
+/* ---- Footer ---- */
+
+.footer {
+  margin-top: 6rem;
+  padding: 2.5rem 0 3rem;
+  border-top: 1px solid var(--line);
+}
+
+.footer-inner {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
+
+.footer-inner nav {
+  display: flex;
+  gap: 1.25rem;
+}
+
+.footer-inner a {
+  text-decoration: none;
+  color: var(--text-soft);
+}
+
+.footer-inner a:hover {
+  color: var(--mint);
+}
+
+/* ---- Toast ---- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 100;
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  background: var(--raise);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 980px) {
+  .hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 3rem;
+  }
+
+  .cards {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .demo {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .demo-tabs {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .start {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 2rem;
+  }
+
+  .flow {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .flow-arrow {
+    justify-self: center;
+    width: 2px;
+    height: 36px;
+    background: linear-gradient(180deg, var(--line-2), var(--mint));
+  }
+
+  .flow-arrow::after {
+    top: auto;
+    right: auto;
+    bottom: -1px;
+    left: 50%;
+    transform: translateX(-50%) rotate(135deg);
+  }
+}
+
+@media (max-width: 760px) {
+  .nav-links {
+    display: none;
+  }
+
+  .nav-mobile {
+    display: block;
+  }
+
+  .nav-inner {
+    gap: 0.5rem;
+  }
+
+  .hero {
+    padding-top: 3.5rem;
+  }
+
+  .stats {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .stats li:nth-child(3) {
+    border-left: 0;
+  }
+
+  .stats li:nth-child(n + 3) {
+    border-top: 1px solid var(--line);
+  }
+
+  .demo-stage {
+    padding: 1.25rem;
+  }
+}
+
+@media (max-width: 480px) {
+  .btn--sm {
+    padding: 0 0.85rem;
+  }
+
+  .wrap {
+    width: min(1120px, 100% - 2rem);
+  }
+
+  .demo-tabs {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .profile-name {
+    display: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .live-dot {
+    animation: none;
+  }
+
+  .card,
+  .btn,
+  .toast {
+    transition-duration: 0.01ms;
+  }
+}
+
+.hero-grid > *,
+.start > *,
+.demo > * {
+  min-width: 0;
+}
+
+</style>
 </head>
 <body id="top">
 
-  <header class="topbar">
-    <div class="wrap topbar-inner">
-      <a class="brand" href="#top"><span class="brand-mark" aria-hidden="true"></span>DropJS</a>
-
-      <!-- Navigation dropdown -->
-      <nav aria-label="Page sections">
-        <div id="nav-dropdown"></div>
+  <header class="nav">
+    <div class="wrap nav-inner">
+      <a class="brand" href="#top">
+        <span class="brand-mark"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3l9 5-9 5-9-5z" fill="currentColor"/><path d="M3 12.5l9 5 9-5"/><path d="M3 16.5l9 5 9-5"/></svg></span>
+        DropJS
+      </a>
+      <nav class="nav-links" aria-label="Sections">
+        <a href="#features">Features</a>
+        <a href="#demo">Live demo</a>
+        <a href="#how">How it works</a>
+        <a href="#quickstart">Quick start</a>
       </nav>
-
-      <!-- User profile dropdown -->
-      <div id="profile-dropdown" class="topbar-end"></div>
+      <div id="nav-mobile" class="nav-mobile"></div>
+      <a class="btn btn--primary btn--sm" href="studio.html">Open Studio</a>
     </div>
   </header>
 
-  <main class="wrap">
+  <main>
 
+    <!-- Hero -->
     <section class="hero">
-      <h1>Dropdowns without the dependencies.</h1>
-      <p>
-        DropJS is a small prototype menu library in plain HTML, CSS and JavaScript.
-        Every dropdown on this page, including the two in the header, comes from
-        one <code>new DropJS()</code> call.
-      </p>
-    </section>
-
-    <!-- Basic dropdown -->
-    <section class="demo" id="basic">
-      <div class="demo-copy">
-        <h2>Quick start</h2>
-        <p>Point DropJS at an empty element and pass your options. It builds the button and the menu for you.</p>
-<pre><code>const menu = new DropJS({
-  target: "#dropdown",
-  label: "Menu",
-  options: [
-    { label: "Home", value: "home" },
-    { label: "Settings", value: "settings" },
-    { label: "Profile", value: "profile" }
-  ],
-  onSelect: (option) =&gt; notify(option.label)
-});
-
-menu.open();
-menu.close();</code></pre>
-        <p class="note">Keyboard: Enter or ↓ opens the menu, ↑ ↓ move, Enter selects, Esc closes.</p>
-      </div>
-
-      <div class="stage">
-        <div class="stage-actions">
-          <button class="btn" id="open-btn" type="button">menu.open()</button>
-          <button class="btn" id="close-btn" type="button">menu.close()</button>
+      <div class="wrap hero-grid">
+        <div>
+          <span class="badge">prototype · plain HTML, CSS &amp; JS</span>
+          <h1>Dropdowns without the <span class="grad">dependencies.</span></h1>
+          <p class="lead">
+            DropJS is a small dropdown library in vanilla JavaScript. Menus, searchable selects,
+            keyboard navigation, themes and smooth animation, all from one class and one stylesheet.
+          </p>
+          <div class="cta">
+            <a class="btn btn--primary" href="studio.html">Open the Studio</a>
+            <a class="btn btn--ghost" href="#demo">Try the live demo</a>
+          </div>
+          <div class="install">
+            <span class="prompt" aria-hidden="true">&lt;/&gt;</span>
+            <code id="install-code">&lt;script src="dropjs.js"&gt;&lt;/script&gt;</code>
+            <button class="copy" type="button" data-copy="#install-code">Copy</button>
+          </div>
         </div>
-        <div id="dropdown"></div>
-      </div>
-    </section>
 
-    <!-- Searchable dropdown -->
-    <section class="demo" id="search">
-      <div class="demo-copy">
-        <h2>Searchable dropdown</h2>
-        <p>Add <code>searchable: true</code>. Type to filter the list, then press Enter to pick the first match. The button shows your choice.</p>
-<pre><code>new DropJS({
-  target: "#country-dropdown",
-  label: "Choose a country",
-  searchable: true,
-  placeholder: "Search countries",
-  emptyText: "No countries match",
-  options: countries
-});</code></pre>
-      </div>
-
-      <div class="stage stage--tall">
-        <div id="country-dropdown"></div>
-      </div>
-    </section>
-
-    <!-- Customization -->
-    <section class="demo" id="custom">
-      <div class="demo-copy">
-        <h2>Customization</h2>
-        <p>
-          The <code>style</code> option sets CSS variables: <code>accent</code>,
-          <code>bg</code>, <code>text</code>, <code>muted</code>, <code>border</code>
-          and <code>radius</code>. Change them any time with <code>setStyle()</code>.
-        </p>
-<pre><code>const themed = new DropJS({
-  target: "#themed",
-  label: "Sort by",
-  selectable: true,
-  style: { bg: "#16213e", text: "#eef1fb", accent: "#8ab4ff" },
-  options: [ ... ]
-});
-
-themed.setStyle({ accent: "#d6336c", bg: "#fff7f8" });</code></pre>
-      </div>
-
-      <div class="stage">
-        <div class="stage-actions" role="group" aria-label="Theme presets">
-          <button class="chip" type="button" data-theme="midnight" aria-pressed="true"><i style="--dot:#8ab4ff"></i>Midnight</button>
-          <button class="chip" type="button" data-theme="rose" aria-pressed="false"><i style="--dot:#d6336c"></i>Rose</button>
-          <button class="chip" type="button" data-theme="moss" aria-pressed="false"><i style="--dot:#2f8f46"></i>Moss</button>
+        <div class="hero-card">
+          <div class="card-bar"><span class="live-dot"></span>live preview<span class="hint">click anything</span></div>
+          <div class="mini-nav">
+            <div id="h-nav"></div>
+            <div id="h-profile"></div>
+          </div>
+          <div class="mini-body">
+            <span class="mini-label">select</span>
+            <div id="h-sort"></div>
+            <span class="mini-label">searchable</span>
+            <div id="h-country"></div>
+          </div>
         </div>
-        <div id="themed"></div>
+      </div>
+    </section>
+
+    <!-- Numbers -->
+    <div class="wrap">
+      <ul class="stats">
+        <li><span class="num grad">0</span><span class="label">dependencies</span></li>
+        <li><span class="num grad">~430</span><span class="label">lines of JavaScript</span></li>
+        <li><span class="num grad">12</span><span class="label">settings</span></li>
+        <li><span class="num grad">6</span><span class="label">methods</span></li>
+      </ul>
+    </div>
+
+    <!-- Features -->
+    <section class="section" id="features">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">01 / features</p>
+          <h2>Everything a dropdown needs, nothing it doesn't</h2>
+          <p>Open, close, search, choose and style. Each piece is small enough to read in one sitting.</p>
+        </div>
+
+        <div class="cards">
+          <article class="card card--mint">
+            <h3>Behavior</h3>
+            <ul>
+              <li><strong>Open and close</strong> with a click, or call <code>open()</code> and <code>close()</code> from code</li>
+              <li><strong>Click outside</strong> or press Esc to close the menu</li>
+              <li><strong>Many instances</strong> on one page, each with its own options</li>
+              <li><strong>Searchable</strong> lists that filter as you type</li>
+              <li><strong>Selectable</strong> mode where the button shows your choice</li>
+              <li><strong>Dividers</strong> to group related items</li>
+            </ul>
+          </article>
+
+          <article class="card card--lime">
+            <h3>Keyboard &amp; access</h3>
+            <ul>
+              <li><strong>Arrow keys</strong> move through options and wrap around</li>
+              <li><strong>Home / End</strong> jump to the first or last option</li>
+              <li><strong>Enter or Space</strong> chooses the highlighted option</li>
+              <li><strong>Esc</strong> closes and returns focus to the button</li>
+              <li><strong>Screen readers</strong> get roles, <code>aria-expanded</code> and active-item hints</li>
+              <li><strong>Closed menus</strong> are removed from the Tab order</li>
+            </ul>
+          </article>
+
+          <article class="card">
+            <h3 class="grad">Look &amp; feel</h3>
+            <ul>
+              <li><strong>CSS variables</strong> for accent, background, text, border and radius</li>
+              <li><strong>setStyle()</strong> changes colours while the page is running</li>
+              <li><strong>Smooth motion</strong> that switches off for reduced-motion users</li>
+              <li><strong>Responsive</strong> menus that slide back on screen or open upward</li>
+              <li><strong>Variants</strong> such as a ghost nav button and a wide select</li>
+              <li><strong>Custom buttons</strong> with your own HTML, like an avatar</li>
+            </ul>
+          </article>
+        </div>
+      </div>
+    </section>
+
+    <!-- Live demo -->
+    <section class="section" id="demo">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">02 / live demo</p>
+          <h2>Pick an example and use it</h2>
+          <p>Every example is a real DropJS dropdown. The code underneath is generated from the same settings.</p>
+        </div>
+
+        <div class="demo">
+          <div class="demo-tabs" id="demo-tabs" role="tablist" aria-label="Examples"></div>
+          <div class="demo-panel">
+            <div class="demo-stage" id="demo-stage" role="tabpanel"></div>
+            <div class="code">
+              <div class="code-bar"><span>example.js</span><button class="copy" type="button" data-copy="#demo-code">Copy</button></div>
+              <pre><code id="demo-code"></code></pre>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- How it works -->
+    <section class="section" id="how">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">03 / how it works</p>
+          <h2>One class, four small jobs</h2>
+          <p>DropJS turns a plain element into a button and a menu, listens for events, and keeps the menu on screen.</p>
+        </div>
+
+        <div class="flow">
+          <div class="flow-col">
+            <span class="flow-label">you write</span>
+            <div class="flow-box flow-box--you">
+              <code>new DropJS({<br>&nbsp;&nbsp;target,<br>&nbsp;&nbsp;options<br>})</code>
+              <p>A target element and a list of options.</p>
+            </div>
+          </div>
+
+          <div class="flow-arrow" aria-hidden="true"></div>
+
+          <div class="flow-col">
+            <span class="flow-label">dropjs.js</span>
+            <div class="flow-box flow-box--core">
+              <ul class="core-list">
+                <li><code>_build()</code><span>creates the button, menu and search box</span></li>
+                <li><code>_bind()</code><span>listens for clicks, keys and outside clicks</span></li>
+                <li><code>_renderList()</code><span>draws and filters the options</span></li>
+                <li><code>_position()</code><span>keeps the menu inside the window</span></li>
+              </ul>
+            </div>
+          </div>
+
+          <div class="flow-arrow" aria-hidden="true"></div>
+
+          <div class="flow-col">
+            <span class="flow-label">the page gets</span>
+            <div class="flow-box">
+              <div class="mock-trigger"><span>Menu</span><span aria-hidden="true">⌃</span></div>
+              <div class="mock-menu" aria-hidden="true">
+                <div class="mock-item">Home</div>
+                <div class="mock-item is-active">Settings</div>
+                <div class="mock-item">Profile</div>
+              </div>
+              <p>A button and an animated menu.</p>
+            </div>
+          </div>
+        </div>
+
+        <ul class="chips" aria-label="Events DropJS listens for">
+          <li>click</li>
+          <li>pointerdown (outside)</li>
+          <li>keydown (Esc, arrows, Enter)</li>
+          <li>input (search)</li>
+          <li>resize</li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- Quick start -->
+    <section class="section" id="quickstart">
+      <div class="wrap">
+        <div class="section-head">
+          <p class="eyebrow">04 / quick start</p>
+          <h2>Up and running in three steps</h2>
+          <p>No build tools, no install. Copy two files next to your page.</p>
+        </div>
+
+        <div class="start">
+          <ol class="steps">
+            <li>
+              <h3>Add the files</h3>
+              <p>Link <code>style.css</code> and <code>dropjs.js</code> in your page.</p>
+            </li>
+            <li>
+              <h3>Add an empty element</h3>
+              <p>DropJS builds the button and menu inside it.</p>
+            </li>
+            <li>
+              <h3>Create the dropdown</h3>
+              <p>Pass your options. Call <code>open()</code> and <code>close()</code> whenever you like.</p>
+            </li>
+          </ol>
+
+          <div class="code">
+            <div class="code-bar"><span>index.html</span><button class="copy" type="button" data-copy="#start-code">Copy</button></div>
+            <pre><code id="start-code">&lt;link rel="stylesheet" href="style.css"&gt;
+
+&lt;div id="dropdown"&gt;&lt;/div&gt;
+
+&lt;script src="dropjs.js"&gt;&lt;/script&gt;
+&lt;script&gt;
+  const menu = new DropJS({
+    target: "#dropdown",
+    label: "Menu",
+    options: [
+      { label: "Home", value: "home" },
+      { label: "Settings", value: "settings" },
+      { label: "Profile", value: "profile" }
+    ]
+  });
+
+  menu.open();
+  menu.close();
+&lt;/script&gt;</code></pre>
+          </div>
+        </div>
       </div>
     </section>
 
   </main>
 
-  <footer class="wrap footer">
-    DropJS prototype. Plain HTML, CSS and JavaScript, no libraries.
+  <footer class="footer">
+    <div class="wrap footer-inner">
+      <span>DropJS is a prototype built with plain HTML, CSS and JavaScript.</span>
+      <nav aria-label="Footer">
+        <a href="studio.html">Studio</a>
+        <a href="#demo">Demo</a>
+        <a href="#quickstart">Quick start</a>
+        <a href="#top">Back to top</a>
+      </nav>
+    </div>
   </footer>
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
-  <script src="dropjs.js"></script>
   <script>
-    // Shows a short message at the bottom of the screen
-    const toast = document.getElementById("toast");
+/**
+ * DropJS - a tiny dropdown prototype in plain JavaScript.
+ *
+ *   const menu = new DropJS({
+ *     target: "#dropdown",
+ *     options: [{ label: "Home", value: "home" }]
+ *   });
+ *   menu.open();
+ *   menu.close();
+ *
+ * See README.md for every setting.
+ */
+
+let dropCount = 0; // gives every dropdown a unique id
+
+class DropJS {
+  constructor(config) {
+    config = config || {};
+
+    // 1. Find the element the dropdown will be built inside
+    const root =
+      typeof config.target === "string"
+        ? document.querySelector(config.target)
+        : config.target;
+    if (!root) {
+      throw new Error('DropJS: target "' + config.target + '" was not found.');
+    }
+    if (!Array.isArray(config.options)) {
+      throw new Error("DropJS: options must be an array.");
+    }
+
+    // 2. Settings (whatever you pass in overrides these defaults)
+    this.config = Object.assign(
+      {
+        label: "Select",      // text on the button
+        triggerHTML: "",      // custom HTML for the button (overrides label)
+        searchable: false,    // adds a search box
+        selectable: false,    // button shows the chosen option
+        placeholder: "Search…",
+        emptyText: "No results",
+        align: "left",        // "left" or "right"
+        className: "",        // extra CSS class(es) for the wrapper
+        style: null,          // e.g. { accent: "#e11d48", radius: "4px" }
+        onSelect: null        // function (option, dropdown) {}
+      },
+      config
+    );
+
+    this.root = root;
+    this.options = config.options;
+    this.id = "dropjs-" + ++dropCount;
+    this.isSelect = this.config.selectable || this.config.searchable;
+
+    // 3. State
+    this.isOpen = false;
+    this.selected = null;  // the chosen option (select mode only)
+    this.visible = [];     // options currently shown in the list
+    this.items = [];       // the matching <li> elements
+    this.activeIndex = -1; // highlighted item (keyboard / hover)
+
+    this._build();
+    this._bind();
+    this._position(); // keeps even a closed menu inside the window
+  }
+
+  /* ---------------------------------------------------------
+     Public methods
+     --------------------------------------------------------- */
+
+  open() {
+    if (this.isOpen) return;
+    this.isOpen = true;
+
+    if (this.input) this.input.value = "";
+    this._renderList();
+    this._position();
+
+    this.menu.removeAttribute("inert");
+    this.root.classList.add("is-open");
+    this.trigger.setAttribute("aria-expanded", "true");
+    this.focusEl.focus({ preventScroll: true });
+  }
+
+  // returnFocus: send keyboard focus back to the button
+  close(returnFocus) {
+    if (!this.isOpen) return;
+    this.isOpen = false;
+
+    this.root.classList.remove("is-open");
+    this.trigger.setAttribute("aria-expanded", "false");
+    if (returnFocus) this.trigger.focus();
+
+    // "inert" keeps the hidden menu out of the Tab order. It is applied on the
+    // next tick so a Tab key press can finish moving focus first.
+    setTimeout(() => {
+      if (!this.isOpen) this.menu.setAttribute("inert", "");
+    }, 0);
+  }
+
+  toggle() {
+    if (this.isOpen) this.close();
+    else this.open();
+  }
+
+  // Value of the chosen option (select mode), or null
+  getValue() {
+    return this.selected ? this.selected.value : null;
+  }
+
+  // Each key becomes a CSS variable: { accent: "red" } sets --dropjs-accent
+  setStyle(style) {
+    for (const key in style) {
+      this.root.style.setProperty("--dropjs-" + key, style[key]);
+    }
+  }
+
+  destroy() {
+    document.removeEventListener("pointerdown", this._onDocPointerDown);
+    document.removeEventListener("keydown", this._onDocKeydown);
+    window.removeEventListener("resize", this._onResize);
+    this.root.innerHTML = "";
+    this.root.classList.remove(
+      "dropjs", "dropjs--select", "dropjs--align-right", "has-value", "is-open", "is-up"
+    );
+  }
+
+  /* ---------------------------------------------------------
+     Building the HTML
+     --------------------------------------------------------- */
+
+  _build() {
+    const c = this.config;
+    const listRole = this.isSelect ? "listbox" : "menu";
+
+    this.root.innerHTML = "";
+    this.root.classList.add("dropjs");
+    if (this.isSelect) this.root.classList.add("dropjs--select");
+    if (c.align === "right") this.root.classList.add("dropjs--align-right");
+    if (c.className) {
+      c.className.split(" ").filter(Boolean).forEach((name) => {
+        this.root.classList.add(name);
+      });
+    }
+    if (c.style) this.setStyle(c.style);
+
+    // Button
+    this.trigger = document.createElement("button");
+    this.trigger.type = "button";
+    this.trigger.className = "dropjs-trigger";
+    this.trigger.setAttribute("aria-haspopup", listRole);
+    this.trigger.setAttribute("aria-expanded", "false");
+    this.trigger.setAttribute("aria-controls", this.id + "-menu");
+    this.trigger.innerHTML =
+      '<span class="dropjs-trigger-content"></span>' +
+      '<svg class="dropjs-chevron" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">' +
+      '<path d="M5 7.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    this.labelEl = this.trigger.querySelector(".dropjs-trigger-content");
+    if (c.triggerHTML) {
+      this.labelEl.innerHTML = c.triggerHTML;
+      this.trigger.setAttribute("aria-label", c.label); // name for screen readers
+    } else {
+      this.labelEl.textContent = c.label;
+    }
+
+    // Menu (starts hidden and inert)
+    this.menu = document.createElement("div");
+    this.menu.className = "dropjs-menu";
+    this.menu.id = this.id + "-menu";
+    this.menu.setAttribute("inert", "");
+
+    // Optional search box
+    if (c.searchable) {
+      const wrap = document.createElement("div");
+      wrap.className = "dropjs-search";
+
+      this.input = document.createElement("input");
+      this.input.type = "text";
+      this.input.className = "dropjs-input";
+      this.input.placeholder = c.placeholder;
+      this.input.setAttribute("autocomplete", "off");
+      this.input.setAttribute("aria-label", c.placeholder);
+      this.input.setAttribute("role", "combobox");
+      this.input.setAttribute("aria-expanded", "true");
+      this.input.setAttribute("aria-autocomplete", "list");
+      this.input.setAttribute("aria-controls", this.id + "-list");
+
+      wrap.appendChild(this.input);
+      this.menu.appendChild(wrap);
+    }
+
+    // List of options
+    this.list = document.createElement("ul");
+    this.list.className = "dropjs-list";
+    this.list.id = this.id + "-list";
+    this.list.setAttribute("role", listRole);
+    this.list.tabIndex = -1;
+    this.menu.appendChild(this.list);
+
+    // "No results" message
+    this.empty = document.createElement("div");
+    this.empty.className = "dropjs-empty";
+    this.empty.textContent = c.emptyText;
+    this.empty.hidden = true;
+    this.menu.appendChild(this.empty);
+
+    this.root.appendChild(this.trigger);
+    this.root.appendChild(this.menu);
+
+    // The element that holds keyboard focus while the menu is open
+    this.focusEl = this.input || this.list;
+  }
+
+  // Draws the options (filtered by the search box, if there is one)
+  _renderList() {
+    const query = this.input ? this.input.value.trim().toLowerCase() : "";
+    const itemRole = this.isSelect ? "option" : "menuitem";
+
+    this.list.innerHTML = "";
+    this.visible = [];
+    this.items = [];
+    this.activeIndex = -1;
+
+    this.options.forEach((option) => {
+      if (option.divider) {
+        if (query) return; // hide dividers while searching
+        const line = document.createElement("li");
+        line.className = "dropjs-divider";
+        line.setAttribute("role", "separator");
+        this.list.appendChild(line);
+        return;
+      }
+
+      if (query && option.label.toLowerCase().indexOf(query) === -1) return;
+
+      const index = this.visible.length;
+      const li = document.createElement("li");
+      li.className = "dropjs-item";
+      li.id = this.id + "-item-" + index;
+      li.dataset.index = index;
+      li.setAttribute("role", itemRole);
+      li.textContent = option.label;
+
+      if (this.isSelect) {
+        const isChosen = this.selected === option;
+        li.setAttribute("aria-selected", isChosen ? "true" : "false");
+        if (isChosen) li.classList.add("is-selected");
+      }
+
+      this.visible.push(option);
+      this.items.push(li);
+      this.list.appendChild(li);
+    });
+
+    this.empty.hidden = this.visible.length > 0;
+
+    // Highlight: first match while searching, otherwise the chosen option
+    const start = query ? 0 : this.visible.indexOf(this.selected);
+    this._setActive(this.visible.length ? start : -1);
+  }
+
+  /* ---------------------------------------------------------
+     Events
+     --------------------------------------------------------- */
+
+  _bind() {
+    // Click the button
+    this.trigger.addEventListener("click", () => this.toggle());
+
+    // Arrow keys on the button open the menu
+    this.trigger.addEventListener("keydown", (e) => {
+      if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+      e.preventDefault();
+      this.open();
+      if (this.activeIndex === -1) this._move(e.key === "ArrowDown" ? 1 : -1);
+    });
+
+    // Keys inside the menu
+    this.menu.addEventListener("keydown", (e) => this._onMenuKeydown(e));
+    this.menu.addEventListener("keyup", (e) => {
+      // Space selects on key-up so the key press can't "click" the button we
+      // move focus back to.
+      if (e.key === " " && !this.config.searchable && this.isOpen) {
+        this._select(this.activeIndex);
+      }
+    });
+
+    // Search box
+    if (this.input) {
+      this.input.addEventListener("input", () => this._renderList());
+    }
+
+    // Mouse: choose an item, highlight on hover
+    this.list.addEventListener("click", (e) => {
+      const li = e.target.closest(".dropjs-item");
+      if (li) this._select(Number(li.dataset.index));
+    });
+    this.list.addEventListener("mousemove", (e) => {
+      const li = e.target.closest(".dropjs-item");
+      if (!li) return;
+      const index = Number(li.dataset.index);
+      if (index !== this.activeIndex) this._setActive(index);
+    });
+    // keep focus where it is when clicking inside the list
+    this.list.addEventListener("mousedown", (e) => e.preventDefault());
+
+    // Click outside closes
+    this._onDocPointerDown = (e) => {
+      if (this.isOpen && !this.root.contains(e.target)) this.close();
+    };
+    document.addEventListener("pointerdown", this._onDocPointerDown);
+
+    // Escape closes
+    this._onDocKeydown = (e) => {
+      if (e.key === "Escape" && this.isOpen) {
+        e.preventDefault();
+        this.close(true);
+      }
+    };
+    document.addEventListener("keydown", this._onDocKeydown);
+
+    // Keep the menu on screen when the window changes size
+    this._onResize = () => this._position();
+    window.addEventListener("resize", this._onResize);
+  }
+
+  _onMenuKeydown(e) {
+    const searchable = this.config.searchable;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this._move(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this._move(-1);
+    } else if (e.key === "Home" && !searchable) {
+      e.preventDefault();
+      this._setActive(0);
+    } else if (e.key === "End" && !searchable) {
+      e.preventDefault();
+      this._setActive(this.visible.length - 1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (!e.repeat) this._select(this.activeIndex);
+    } else if (e.key === " " && !searchable) {
+      e.preventDefault(); // stops the page scrolling; selection happens on key-up
+    } else if (e.key === "Tab") {
+      this.close();
+    }
+  }
+
+  /* ---------------------------------------------------------
+     Helpers
+     --------------------------------------------------------- */
+
+  // Move the highlight up (-1) or down (+1), wrapping around
+  _move(direction) {
+    const count = this.visible.length;
+    if (!count) return;
+    if (this.activeIndex === -1) {
+      this._setActive(direction > 0 ? 0 : count - 1);
+    } else {
+      this._setActive((this.activeIndex + direction + count) % count);
+    }
+  }
+
+  _setActive(index) {
+    const previous = this.items[this.activeIndex];
+    if (previous) previous.classList.remove("is-active");
+
+    this.activeIndex = index;
+    const item = this.items[index];
+
+    if (!item) {
+      this.focusEl.removeAttribute("aria-activedescendant");
+      return;
+    }
+
+    item.classList.add("is-active");
+    this.focusEl.setAttribute("aria-activedescendant", item.id);
+
+    // Scroll the list (not the page) so the item is visible
+    const top = item.offsetTop;
+    const bottom = top + item.offsetHeight;
+    if (top < this.list.scrollTop) {
+      this.list.scrollTop = top;
+    } else if (bottom > this.list.scrollTop + this.list.clientHeight) {
+      this.list.scrollTop = bottom - this.list.clientHeight;
+    }
+  }
+
+  _select(index) {
+    const option = this.visible[index];
+    if (!option) return;
+
+    if (this.isSelect) {
+      this.selected = option;
+      this.labelEl.textContent = option.label;
+      this.root.classList.add("has-value");
+    }
+
+    this.close(true);
+    if (typeof this.config.onSelect === "function") {
+      this.config.onSelect(option, this);
+    }
+  }
+
+  // Keep the menu inside the window: slide it sideways, or open it upwards
+  _position() {
+    const gap = 8;
+    const box = this.root.getBoundingClientRect();
+    const menuWidth = this.menu.offsetWidth;
+    const menuHeight = this.menu.offsetHeight;
+    const viewWidth = document.documentElement.clientWidth;
+    const viewHeight = window.innerHeight;
+
+    let left = this.config.align === "right" ? box.right - menuWidth : box.left;
+    left = Math.max(gap, Math.min(left, viewWidth - menuWidth - gap));
+    this.menu.style.left = left - box.left + "px";
+
+    const noRoomBelow = box.bottom + gap + menuHeight > viewHeight;
+    const roomAbove = box.top - gap - menuHeight > 0;
+    this.root.classList.toggle("is-up", noRoomBelow && roomAbove);
+  }
+}
+
+window.DropJS = DropJS;
+
+</script>
+  <script>
+  (function () {
+    "use strict";
+
+    const $ = (selector, root) => (root || document).querySelector(selector);
+    const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
+
+    // Friendly hint if the sibling files were not found
+    const cssLoaded = getComputedStyle(document.body).backgroundColor === "rgb(8, 12, 11)";
+    if (typeof DropJS === "undefined" || !cssLoaded) {
+      document.body.insertAdjacentHTML("afterbegin",
+        '<p style="padding:1rem;margin:0;font:16px sans-serif;background:#fff3b0;color:#222">' +
+        "style.css, site.css or dropjs.js was not found. Keep index.html, style.css, site.css and dropjs.js " +
+        "in the same folder, or open standalone/index.html, which needs nothing else.</p>");
+      if (typeof DropJS === "undefined") return;
+    }
+
+    /* ------------------------------------------------------
+       Small helpers: toast, copy buttons, code colouring
+       ------------------------------------------------------ */
+    const toast = $("#toast");
     let toastTimer;
     function notify(message) {
       toast.textContent = message;
@@ -133,106 +2001,229 @@ themed.setStyle({ accent: "#d6336c", bg: "#fff7f8" });</code></pre>
       toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2200);
     }
 
-    // 1. Navigation dropdown: scrolls to a section
-    new DropJS({
-      target: "#nav-dropdown",
-      label: "Explore",
-      className: "dropjs--ghost",
-      options: [
-        { label: "Quick start", value: "#basic" },
-        { label: "Searchable", value: "#search" },
-        { label: "Customization", value: "#custom" },
-        { divider: true },
-        { label: "Back to top", value: "#top" }
-      ],
-      onSelect: (option) => {
-        document.querySelector(option.value).scrollIntoView();
-      }
+    // Colours strings, keywords and comments in a <code> element
+    function highlight(el) {
+      const text = el.textContent.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+      const pattern = /(\/\/[^\n]*)|("(?:[^"\\\n]|\\.)*")|(&lt;\/?[a-zA-Z][a-zA-Z0-9]*)|\b(new|const|let|true|false)\b/g;
+      el.innerHTML = text.replace(pattern, (match, comment, string, tag, keyword) => {
+        if (comment) return '<span class="c">' + comment + "</span>";
+        if (string) return '<span class="s">' + string + "</span>";
+        return '<span class="k">' + (tag || keyword) + "</span>";
+      });
+    }
+
+    $$("[data-copy]").forEach((button) => {
+      button.addEventListener("click", async () => {
+        const text = $(button.dataset.copy).textContent;
+        try {
+          await navigator.clipboard.writeText(text);
+        } catch (error) {
+          const area = document.createElement("textarea");
+          area.value = text;
+          document.body.appendChild(area);
+          area.select();
+          document.execCommand("copy");
+          area.remove();
+        }
+        button.textContent = "Copied";
+        setTimeout(() => { button.textContent = "Copy"; }, 1500);
+      });
     });
 
-    // 2. User profile dropdown: custom button HTML, aligned to the right
+    function goTo(selector) {
+      const target = $(selector);
+      if (target) target.scrollIntoView();
+    }
+
+    const AVATAR = '<span class="avatar">SR</span><span class="profile-name">Sam Rivera</span>';
+    const COUNTRIES = [
+      "Argentina", "Australia", "Brazil", "Canada", "Chile", "Egypt", "France", "Germany",
+      "India", "Indonesia", "Japan", "Kenya", "Mexico", "Netherlands", "New Zealand", "Nigeria",
+      "Norway", "Portugal", "South Korea", "Spain", "Sweden", "Thailand", "Vietnam"
+    ].map((name) => ({ label: name, value: name.toLowerCase().replace(/\s+/g, "-") }));
+
+    const PROFILE_OPTIONS = [
+      { label: "View profile", value: "profile" },
+      { label: "Account settings", value: "settings" },
+      { label: "Billing", value: "billing" },
+      { divider: true },
+      { label: "Sign out", value: "signout" }
+    ];
+
+    const SECTION_OPTIONS = [
+      { label: "Features", value: "#features" },
+      { label: "Live demo", value: "#demo" },
+      { label: "How it works", value: "#how" },
+      { label: "Quick start", value: "#quickstart" }
+    ];
+
+    /* ------------------------------------------------------
+       Mobile navigation (the site uses DropJS itself)
+       ------------------------------------------------------ */
     new DropJS({
-      target: "#profile-dropdown",
-      label: "Account menu",
-      triggerHTML: '<span class="avatar">SR</span><span class="profile-name">Sam Rivera</span>',
+      target: "#nav-mobile",
+      label: "Menu",
       className: "dropjs--ghost",
       align: "right",
-      options: [
-        { label: "View profile", value: "profile" },
-        { label: "Account settings", value: "settings" },
-        { label: "Billing", value: "billing" },
-        { divider: true },
-        { label: "Sign out", value: "signout" }
-      ],
+      options: SECTION_OPTIONS,
+      onSelect: (option) => goTo(option.value)
+    });
+
+    /* ------------------------------------------------------
+       Hero preview card
+       ------------------------------------------------------ */
+    new DropJS({
+      target: "#h-nav",
+      label: "Explore",
+      className: "dropjs--ghost",
+      options: SECTION_OPTIONS,
+      onSelect: (option) => goTo(option.value)
+    });
+
+    new DropJS({
+      target: "#h-profile",
+      label: "Account menu",
+      triggerHTML: AVATAR,
+      className: "dropjs--ghost",
+      align: "right",
+      options: PROFILE_OPTIONS,
       onSelect: (option) => notify(option.label + " (demo only)")
     });
 
-    // 3. Basic dropdown with open() and close()
-    const menu = new DropJS({
-      target: "#dropdown",
-      label: "Menu",
-      options: [
-        { label: "Home", value: "home" },
-        { label: "Settings", value: "settings" },
-        { label: "Profile", value: "profile" }
-      ],
-      onSelect: (option) => notify("Selected " + option.label + " (value: " + option.value + ")")
-    });
-
-    document.getElementById("open-btn").addEventListener("click", () => menu.open());
-    document.getElementById("close-btn").addEventListener("click", () => menu.close());
-
-    // 4. Searchable dropdown
-    const countryNames = [
-      "Argentina", "Australia", "Brazil", "Canada", "Chile", "Egypt", "France",
-      "Germany", "India", "Indonesia", "Japan", "Kenya", "Mexico", "Netherlands",
-      "New Zealand", "Nigeria", "Norway", "Portugal", "South Korea", "Spain",
-      "Sweden", "Thailand", "Vietnam"
-    ];
-    const countries = countryNames.map((name) => ({
-      label: name,
-      value: name.toLowerCase().replace(/\s+/g, "-")
-    }));
-
     new DropJS({
-      target: "#country-dropdown",
-      label: "Choose a country",
-      className: "dropjs--wide",
-      searchable: true,
-      placeholder: "Search countries",
-      emptyText: "No countries match",
-      options: countries
-    });
-
-    // 5. Customization: a themed dropdown plus preset buttons
-    const themes = {
-      midnight: { bg: "#16213e", text: "#eef1fb", muted: "#9aa7c7", border: "#2b3a63", accent: "#8ab4ff", radius: "14px" },
-      rose:     { bg: "#fff7f8", text: "#3b1a21", muted: "#a0707b", border: "#f1d3da", accent: "#d6336c", radius: "12px" },
-      moss:     { bg: "#f4f8f1", text: "#1f2d1a", muted: "#6b7f63", border: "#d3e3cb", accent: "#2f8f46", radius: "4px" }
-    };
-
-    const themed = new DropJS({
-      target: "#themed",
+      target: "#h-sort",
       label: "Sort by",
       className: "dropjs--wide",
       selectable: true,
-      style: themes.midnight,
       options: [
         { label: "Newest", value: "newest" },
         { label: "Oldest", value: "oldest" },
         { label: "Most popular", value: "popular" },
         { label: "A to Z", value: "az" }
-      ],
-      onSelect: (option) => notify("Sorted by " + option.label)
+      ]
     });
 
-    const chips = document.querySelectorAll("[data-theme]");
-    chips.forEach((chip) => {
-      chip.addEventListener("click", () => {
-        themed.setStyle(themes[chip.dataset.theme]);
-        chips.forEach((other) => other.setAttribute("aria-pressed", String(other === chip)));
-      });
+    new DropJS({
+      target: "#h-country",
+      label: "Choose a country",
+      className: "dropjs--wide",
+      searchable: true,
+      placeholder: "Search countries",
+      options: COUNTRIES
     });
+
+    /* ------------------------------------------------------
+       Live demo with tabs. The code shown is built from the
+       same settings object that creates the dropdown.
+       ------------------------------------------------------ */
+    const EXAMPLES = [
+      {
+        tab: "Navigation",
+        note: "Ghost style with a divider",
+        config: {
+          label: "Explore",
+          className: "dropjs--ghost",
+          options: SECTION_OPTIONS.concat([{ divider: true }, { label: "Back to top", value: "#top" }])
+        },
+        go: true
+      },
+      {
+        tab: "Profile",
+        note: "Custom button, aligned right",
+        config: { label: "Account menu", triggerHTML: AVATAR, className: "dropjs--ghost", align: "right", options: PROFILE_OPTIONS }
+      },
+      {
+        tab: "Searchable",
+        note: "Type to filter, Enter to pick",
+        config: { label: "Choose a country", className: "dropjs--wide", searchable: true, placeholder: "Search countries", options: COUNTRIES }
+      },
+      {
+        tab: "Custom theme",
+        note: "Your colours and radius",
+        config: {
+          label: "Sort by",
+          className: "dropjs--wide",
+          selectable: true,
+          style: { accent: "#ffb454", bg: "#1a1410", text: "#fbeedd", muted: "#a8927c", border: "#3a2d22", radius: "4px" },
+          options: [
+            { label: "Newest", value: "newest" },
+            { label: "Oldest", value: "oldest" },
+            { label: "Most popular", value: "popular" },
+            { label: "A to Z", value: "az" }
+          ]
+        }
+      }
+    ];
+
+    function codeFor(config) {
+      const lines = ['  target: "#dropdown"'];
+      Object.keys(config).forEach((key) => {
+        if (key === "options") return;
+        const value = JSON.stringify(config[key], null, key === "style" ? 2 : 0);
+        lines.push("  " + key + ": " + value.replace(/\n/g, "\n  "));
+      });
+      lines.push("  options: [\n" + config.options.map((o) => {
+        return "    " + (o.divider ? "{ divider: true }" : "{ label: " + JSON.stringify(o.label) + ", value: " + JSON.stringify(o.value) + " }");
+      }).join(",\n") + "\n  ]");
+      lines.push("  onSelect: (option) => console.log(option.value)");
+      return "new DropJS({\n" + lines.join(",\n") + "\n});";
+    }
+
+    const tabsEl = $("#demo-tabs");
+    const stage = $("#demo-stage");
+    const codeEl = $("#demo-code");
+    let currentDropdown = null;
+
+    function showExample(index) {
+      const example = EXAMPLES[index];
+      if (currentDropdown) currentDropdown.destroy();
+      stage.innerHTML = "";
+      const host = document.createElement("div");
+      stage.style.justifyContent = example.config.align === "right" ? "flex-end" : "flex-start";
+      stage.appendChild(host);
+
+      currentDropdown = new DropJS(Object.assign({}, example.config, {
+        target: host,
+        onSelect: (option) => {
+          if (example.go && option.value.charAt(0) === "#") goTo(option.value);
+          else notify("Selected " + option.label);
+        }
+      }));
+
+      codeEl.textContent = codeFor(example.config);
+      highlight(codeEl);
+
+      $$(".demo-tab", tabsEl).forEach((tab, i) => {
+        tab.setAttribute("aria-selected", String(i === index));
+        tab.tabIndex = i === index ? 0 : -1;
+      });
+      stage.setAttribute("aria-labelledby", "demo-tab-" + index);
+    }
+
+    EXAMPLES.forEach((example, index) => {
+      const tab = document.createElement("button");
+      tab.type = "button";
+      tab.id = "demo-tab-" + index;
+      tab.className = "demo-tab";
+      tab.setAttribute("role", "tab");
+      tab.innerHTML = "<strong></strong><span></span>";
+      $("strong", tab).textContent = example.tab;
+      $("span", tab).textContent = example.note;
+      tab.addEventListener("click", () => showExample(index));
+      tab.addEventListener("keydown", (e) => {
+        const keys = { ArrowDown: 1, ArrowRight: 1, ArrowUp: -1, ArrowLeft: -1 };
+        if (!(e.key in keys)) return;
+        e.preventDefault();
+        const next = (index + keys[e.key] + EXAMPLES.length) % EXAMPLES.length;
+        showExample(next);
+        $$(".demo-tab", tabsEl)[next].focus();
+      });
+      tabsEl.appendChild(tab);
+    });
+
+    showExample(0);
+    highlight($("#start-code"));
+  })();
   </script>
 </body>
 </html>

@@ -2,13 +2,17 @@
 
 A tiny dropdown library prototype in plain HTML, CSS and JavaScript. No dependencies, no build step.
 
+`index.html` is **DropJS Studio**, a small visual builder for trying it out: pick components on the left, arrange them on the phone-style canvas, tune them in the Properties panel, then press **Generate** to copy the code.
+
 This is a prototype, not a production framework.
 
 ## Run it locally
 
-**Option 1: just open the file.** Double-click `index.html`. It works straight from disk.
+**Easiest:** open `standalone/index.html`. It is the whole website in a single file (CSS and JavaScript built in), with `standalone/studio.html` beside it for the builder. Nothing else is needed.
 
-**Option 2: use a local server** (closer to a real site). In the `DropJS` folder, run one of:
+**Normal version:** keep every file together in one folder and open `index.html`. If the page looks unstyled or shows a huge black shape, `style.css`, `site.css` or `dropjs.js` is not in the same folder as `index.html`.
+
+For a local server (closer to a real site), run one of these in the `DropJS` folder:
 
 ```bash
 # Python 3 (already installed on most systems)
@@ -18,19 +22,23 @@ python3 -m http.server 8000
 npx serve
 ```
 
-Then open <http://localhost:8000> in your browser.
+Then open <http://localhost:8000>.
 
 ## Files
 
 ```text
 DropJS/
-├── index.html   Demo page (navigation, profile, searchable, customization)
-├── style.css    Part 1: DropJS styles. Part 2: demo page styles
-├── dropjs.js    The library (one class, no dependencies)
+├── index.html       The website: hero, features, live demo, how it works, quick start
+├── studio.html      DropJS Studio, a visual builder (components, canvas, properties, Generate)
+├── style.css        DropJS component styles (the only CSS you need to use DropJS)
+├── site.css         Website styles (index.html only)
+├── studio.css       Studio styles (studio.html only)
+├── dropjs.js        The library (one class, no dependencies)
+├── standalone/      The same two pages with CSS and JS built in (one file each)
 └── README.md
 ```
 
-To use DropJS in your own page, copy `dropjs.js` and Part 1 of `style.css`, then:
+To use DropJS in your own page, copy `dropjs.js` and `style.css`, then:
 
 ```html
 <link rel="stylesheet" href="style.css">
@@ -54,6 +62,20 @@ To use DropJS in your own page, copy `dropjs.js` and Part 1 of `style.css`, then
 ```
 
 DropJS builds the button and the menu inside `target`. Anything already inside that element is replaced.
+
+## Using DropJS Studio
+
+Open `studio.html` (or the "Open Studio" button on the website).
+
+| Area | What it does |
+| --- | --- |
+| Components (left) | Click a component, press Enter on it, or drag it onto the canvas. Types: Menu, Navigation, Profile menu, Select, Searchable |
+| Tree (left tab) | Lists everything on the canvas. Click a row to select it |
+| Canvas (middle) | Every dropdown is live. Click one to select it, then edit it on the right |
+| Properties (right) | Label, options (one per line, `---` for a divider), searchable, show chosen option, menu alignment, accent/background/text colours, corner radius, delete |
+| Top bar | Project name, Open and Save (stored in this browser), New, Undo, Redo |
+| Preview | Hides the editing panels so you can try the dropdowns. Press Edit to return |
+| Generate | Shows ready-to-paste HTML and JavaScript for everything on the canvas |
 
 ## Settings
 
@@ -104,7 +126,7 @@ Every dropdown is styled with CSS variables, so you can change the look in three
 2. Your own CSS, for example `#my-menu { --dropjs-accent: tomato; }`.
 3. A custom class through `className`, then write rules for `.dropjs-trigger`, `.dropjs-menu`, `.dropjs-item`, and so on.
 
-Variables: `--dropjs-accent`, `--dropjs-bg`, `--dropjs-text`, `--dropjs-muted`, `--dropjs-border`, `--dropjs-radius`.
+Variables: `--dropjs-accent`, `--dropjs-bg`, `--dropjs-text`, `--dropjs-muted`, `--dropjs-border`, `--dropjs-radius`, plus the optional `--dropjs-active` (highlight colour, a tint of the accent by default).
 
 ## Known limits of the prototype
 
