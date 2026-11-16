@@ -1,0 +1,2199 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>DropJS Studio</title>
+  <style>
+/* ==========================================================
+   PART 1: DropJS component styles
+   Customize with CSS variables (or setStyle() / the style option):
+   accent, bg, text, muted, border, radius
+   ========================================================== */
+
+.dropjs {
+  --dropjs-accent: #2de2b0;
+  --dropjs-bg: #121a18;
+  --dropjs-text: #e6efec;
+  --dropjs-muted: #8a9b96;
+  --dropjs-border: #2b3b36;
+  --dropjs-radius: 10px;
+
+  position: relative;
+  display: inline-block;
+  font-size: 0.95rem;
+  color: var(--dropjs-text);
+}
+
+.dropjs.is-open {
+  z-index: 50; /* open menus sit above everything after them */
+}
+
+/* ---- Button ---- */
+
+.dropjs-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  background: var(--dropjs-bg);
+  border: 1px solid var(--dropjs-border);
+  border-radius: var(--dropjs-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.dropjs-trigger:hover {
+  border-color: color-mix(in srgb, var(--dropjs-text) 65%, var(--dropjs-border));
+}
+
+.dropjs-trigger:focus-visible {
+  outline: 2px solid var(--dropjs-accent);
+  outline-offset: 2px;
+}
+
+.dropjs.is-open .dropjs-trigger {
+  border-color: var(--dropjs-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dropjs-accent) 22%, transparent);
+}
+
+.dropjs-trigger-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dropjs-chevron {
+  flex: none;
+  color: var(--dropjs-muted);
+  transition: transform 0.2s ease;
+}
+
+.dropjs.is-open .dropjs-chevron {
+  transform: rotate(180deg);
+}
+
+/* select mode: grey text until something is chosen */
+.dropjs--select:not(.has-value) .dropjs-trigger-content {
+  color: var(--dropjs-muted);
+}
+
+/* ---- Variants you can add with className ---- */
+
+.dropjs--wide {
+  display: block;
+  width: min(100%, 20rem);
+}
+
+.dropjs--ghost .dropjs-trigger {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dropjs--ghost .dropjs-trigger:hover,
+.dropjs--ghost.is-open .dropjs-trigger {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: inset 0 -3px 0 var(--dropjs-accent); /* red underline, like a site nav */
+}
+
+/* ---- Menu (animated open and close) ---- */
+
+.dropjs-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  min-width: max(100%, 12rem);
+  max-width: calc(100vw - 16px);
+  padding: 0.35rem;
+  background: var(--dropjs-bg);
+  border: 1px solid var(--dropjs-border);
+  border-radius: var(--dropjs-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 40px -12px rgba(0, 0, 0, 0.7);
+
+  /* closed state */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
+}
+
+.dropjs--align-right .dropjs-menu {
+  transform-origin: top right;
+}
+
+/* opens upwards when there is no room below (JS adds .is-up) */
+.dropjs.is-up .dropjs-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateY(6px) scale(0.98);
+  transform-origin: bottom left;
+}
+
+.dropjs--align-right.is-up .dropjs-menu {
+  transform-origin: bottom right;
+}
+
+/* open state (must stay after the rules above) */
+.dropjs.is-open .dropjs-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition-delay: 0s;
+}
+
+/* ---- Search box ---- */
+
+.dropjs-search {
+  padding: 0.15rem 0.15rem 0.4rem;
+}
+
+.dropjs-input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 1rem; /* 16px stops iOS zooming in on focus */
+  color: inherit;
+  background: color-mix(in srgb, var(--dropjs-text) 4%, var(--dropjs-bg));
+  border: 1px solid var(--dropjs-border);
+  border-radius: max(4px, calc(var(--dropjs-radius) - 4px));
+  outline: none;
+}
+
+.dropjs-input:focus {
+  border-color: var(--dropjs-accent);
+}
+
+.dropjs-input::placeholder {
+  color: var(--dropjs-muted);
+}
+
+/* ---- List ---- */
+
+.dropjs-list {
+  position: relative; /* lets the script measure item positions */
+  max-height: min(15rem, 50vh);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+.dropjs-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.65rem;
+  white-space: nowrap;
+  border-radius: max(4px, calc(var(--dropjs-radius) - 4px));
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropjs-item.is-active {
+  /* a tint of the accent (override with --dropjs-active) */
+  background: var(--dropjs-active, color-mix(in srgb, var(--dropjs-accent) 16%, var(--dropjs-bg)));
+}
+
+.dropjs-item.is-selected {
+  color: var(--dropjs-accent);
+  font-weight: 600;
+}
+
+/* check mark on the chosen option */
+.dropjs-item.is-selected::after {
+  content: "";
+  flex: none;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.dropjs-divider {
+  height: 1px;
+  margin: 0.3rem 0.25rem;
+  background: var(--dropjs-border);
+}
+
+.dropjs-empty {
+  padding: 0.75rem 0.65rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--dropjs-muted);
+}
+
+/* bigger touch targets on phones */
+@media (max-width: 480px) {
+  .dropjs-item {
+    padding: 0.7rem 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropjs-trigger,
+  .dropjs-chevron,
+  .dropjs-menu {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
+
+/* ==========================================================
+   DropJS Studio page styles (studio.html only)
+   Dark theme: green-black surfaces, mint-to-lime accent
+   ========================================================== */
+
+:root {
+  color-scheme: dark; /* dark scrollbars and native controls */
+  --bg: #080c0b;
+  --panel: #0d1311;
+  --card: #101715;
+  --raise: #17211e;
+  --line: #1e2a27;
+  --line-2: #2b3b36;
+  --text: #e6efec;
+  --text-soft: #a3b4ae;
+  --muted: #7a8c86;
+  --mint: #2de2b0;
+  --lime: #b4f25a;
+  --grad: linear-gradient(135deg, var(--mint), var(--lime));
+  --on-accent: #06120e;
+  --coral: #ff7a70;
+  --sans: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+* {
+  scrollbar-color: var(--line-2) transparent;
+}
+
+html,
+body {
+  height: 100%;
+}
+
+body {
+  margin: 0;
+  font-family: var(--sans);
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text);
+  background: var(--bg);
+  -webkit-font-smoothing: antialiased;
+}
+
+button,
+input,
+textarea {
+  font: inherit;
+  color: inherit;
+  letter-spacing: inherit;
+}
+
+button:focus-visible,
+.comp:focus-visible {
+  outline: 2px solid var(--mint);
+  outline-offset: 2px;
+}
+
+/* icons are drawn with strokes so they inherit the text colour */
+.i {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+/* ---- Layout ---- */
+
+.studio {
+  display: grid;
+  grid-template-rows: 72px minmax(0, 1fr);
+  height: 100vh;
+  height: 100dvh;
+}
+
+.workspace {
+  display: grid;
+  grid-template-columns: 340px minmax(0, 1fr) 300px;
+  min-height: 0;
+}
+
+/* ---- Top bar ---- */
+
+.topbar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0 1.5rem;
+  background: rgba(8, 12, 11, 0.9);
+  border-bottom: 1px solid var(--line);
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+  margin-right: 1.25rem;
+  font-size: 1.3rem;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.logo .i {
+  width: 36px;
+  height: 36px;
+  padding: 7px;
+  color: var(--on-accent);
+  background: var(--grad);
+  border-radius: 10px;
+  box-shadow: 0 6px 20px -6px rgba(45, 226, 176, 0.6);
+}
+
+.project-name {
+  width: 12rem;
+  max-width: 100%;
+  padding: 0.35rem 0.4rem;
+  font-size: 1rem;
+  color: var(--text-soft);
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid transparent;
+  border-radius: 4px;
+}
+
+.project-name:hover {
+  border-bottom-color: var(--line-2);
+}
+
+.project-name:focus {
+  outline: none;
+  color: var(--text);
+  border-bottom-color: var(--mint);
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+.icon-btn {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  color: var(--text-soft);
+  background: transparent;
+  border: 0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: background-color 0.15s, color 0.15s;
+}
+
+.icon-btn:hover {
+  color: var(--text);
+  background: var(--raise);
+}
+
+.icon-btn:disabled {
+  opacity: 0.3;
+  color: var(--text-soft);
+  background: none;
+  cursor: default;
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  height: 40px;
+  padding: 0 1.2rem;
+  font-weight: 600;
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: border-color 0.15s, background-color 0.15s, box-shadow 0.15s, filter 0.15s;
+}
+
+.pill .i {
+  width: 20px;
+  height: 20px;
+}
+
+.pill--outline {
+  margin-left: 0.6rem;
+  color: var(--text);
+  background: var(--card);
+  border-color: var(--line-2);
+}
+
+.pill--outline:hover {
+  background: var(--raise);
+  border-color: var(--mint);
+}
+
+.pill--solid {
+  margin-left: 0.4rem;
+  color: var(--on-accent);
+  background: var(--grad);
+  box-shadow: 0 8px 24px -10px rgba(45, 226, 176, 0.7);
+}
+
+.pill--solid:hover {
+  filter: brightness(1.08);
+  box-shadow: 0 10px 30px -8px rgba(45, 226, 176, 0.85);
+}
+
+/* ---- Left sidebar ---- */
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  background: var(--panel);
+  border-right: 1px solid var(--line);
+}
+
+.tabs {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  border-bottom: 1px solid var(--line);
+}
+
+.tab {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.85rem 0.5rem 0.75rem;
+  font-size: 1rem;
+  color: var(--muted);
+  background: none;
+  border: 0;
+  cursor: pointer;
+  transition: color 0.15s;
+}
+
+.tab:hover {
+  color: var(--text-soft);
+}
+
+.tab[aria-selected="true"] {
+  color: var(--text);
+  font-weight: 600;
+}
+
+.tab[aria-selected="true"]::after {
+  content: "";
+  position: absolute;
+  bottom: -1px;
+  left: 18%;
+  right: 18%;
+  height: 3px;
+  background: var(--grad);
+  border-radius: 3px 3px 0 0;
+}
+
+.panel-body {
+  flex: 1;
+  padding: 1.25rem 1.25rem;
+  overflow: auto;
+}
+
+.panel-title {
+  margin: 0 0 1rem;
+  font-size: 1rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+}
+
+.comp {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  height: 54px;
+  padding: 0 0.75rem;
+  margin-bottom: 0.35rem;
+  color: var(--text-soft);
+  border: 1px solid transparent;
+  border-radius: 12px;
+  cursor: grab;
+  user-select: none;
+  transition: background-color 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.comp:hover {
+  color: var(--text);
+  background: var(--raise);
+  border-color: var(--line-2);
+}
+
+.comp .grip {
+  margin-left: auto;
+  color: var(--muted);
+}
+
+.tree-root {
+  padding: 0.4rem 0.5rem;
+  font-weight: 700;
+}
+
+.tree-item {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  width: calc(100% - 1rem);
+  margin-left: 1rem;
+  padding: 0.55rem 0.6rem;
+  color: var(--text-soft);
+  text-align: left;
+  background: none;
+  border: 0;
+  border-left: 2px solid var(--line-2);
+  border-radius: 0 10px 10px 0;
+  cursor: pointer;
+}
+
+.tree-item:hover {
+  color: var(--text);
+  background: var(--raise);
+}
+
+.tree-item.is-selected {
+  color: var(--text);
+  font-weight: 600;
+  background: rgba(45, 226, 176, 0.12);
+  border-left-color: var(--mint);
+}
+
+/* ---- Canvas ---- */
+
+.canvas {
+  padding: 0 1.5rem;
+  overflow: auto;
+  background:
+    radial-gradient(70% 45% at 50% 0%, rgba(45, 226, 176, 0.11), transparent 70%),
+    var(--bg);
+}
+
+.device {
+  width: min(487px, 100%);
+  min-height: 100%;
+  margin: 0 auto;
+  padding: 30px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-bottom: 0;
+  border-radius: 22px 22px 0 0;
+  box-shadow: 0 30px 80px -30px rgba(0, 0, 0, 0.9);
+}
+
+.frame {
+  padding: 22px 24px 24px;
+  background: rgba(45, 226, 176, 0.05);
+  border: 1px solid rgba(45, 226, 176, 0.3);
+  border-radius: 14px;
+}
+
+.frame-title {
+  margin: 0 0 1.5rem;
+  font-size: 1.2rem;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  overflow-wrap: anywhere;
+}
+
+.nodes {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.nodes:not(:empty) {
+  margin-bottom: 1rem;
+}
+
+.node {
+  padding: 0.5rem;
+  border-radius: 10px;
+  outline: 2px solid transparent;
+  transition: outline-color 0.15s, background-color 0.15s;
+}
+
+.node:hover {
+  outline-color: rgba(45, 226, 176, 0.3);
+}
+
+.node.is-selected {
+  outline-color: var(--mint);
+  background: rgba(255, 255, 255, 0.03);
+}
+
+.dropzone {
+  display: grid;
+  place-items: center;
+  min-height: 100px;
+  padding: 0.5rem;
+  color: var(--text-soft);
+  text-align: center;
+  border: 1.5px dashed rgba(45, 226, 176, 0.35);
+  border-radius: 10px;
+  transition: background-color 0.15s, border-color 0.15s;
+}
+
+.dropzone.is-compact {
+  min-height: 56px;
+  font-size: 0.9rem;
+  color: var(--muted);
+}
+
+.dropzone.is-over {
+  background: rgba(45, 226, 176, 0.12);
+  border-color: var(--mint);
+}
+
+.avatar {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--dropjs-accent, var(--mint));
+  border-radius: 50%;
+}
+
+/* ---- Properties ---- */
+
+.props {
+  padding: 1.5rem;
+  overflow: auto;
+  background: var(--panel);
+  border-left: 1px solid var(--line);
+}
+
+.muted {
+  margin: 0;
+  color: var(--muted);
+}
+
+.field {
+  display: grid;
+  gap: 0.4rem;
+  margin-bottom: 1.2rem;
+}
+
+.field > label,
+.flabel {
+  font-family: var(--mono);
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.field input[type="text"],
+.field textarea {
+  width: 100%;
+  padding: 0.55rem 0.7rem;
+  font-size: 0.95rem;
+  color: var(--text);
+  background: #0a0f0e;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+}
+
+.field input[type="text"]:focus,
+.field textarea:focus {
+  outline: none;
+  border-color: var(--mint);
+  box-shadow: 0 0 0 3px rgba(45, 226, 176, 0.18);
+}
+
+.field textarea {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  line-height: 1.5;
+  resize: vertical;
+}
+
+.field small {
+  font-size: 0.78rem;
+  color: var(--muted);
+}
+
+.check,
+.color-row {
+  display: flex;
+  align-items: center;
+  gap: 0.55rem;
+  font-size: 0.95rem;
+  color: var(--text);
+}
+
+.color-row {
+  justify-content: space-between;
+}
+
+.color-row output {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--muted);
+}
+
+.check input,
+input[type="range"] {
+  accent-color: var(--mint);
+}
+
+.check input:disabled + span {
+  color: var(--muted);
+}
+
+input[type="color"] {
+  width: 44px;
+  height: 30px;
+  padding: 0;
+  background: var(--raise);
+  border: 1px solid var(--line-2);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+input[type="range"] {
+  width: 100%;
+}
+
+.seg {
+  display: inline-grid;
+  grid-auto-flow: column;
+  justify-self: start;
+  overflow: hidden;
+  border: 1px solid var(--line-2);
+  border-radius: 10px;
+}
+
+.seg button {
+  padding: 0.4rem 1rem;
+  color: var(--text-soft);
+  background: var(--card);
+  border: 0;
+  cursor: pointer;
+}
+
+.seg button[aria-pressed="true"] {
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--mint);
+}
+
+.danger {
+  width: 100%;
+  margin-top: 0.4rem;
+  padding: 0.6rem;
+  color: var(--coral);
+  background: transparent;
+  border: 1px solid rgba(255, 122, 112, 0.45);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.15s;
+}
+
+.danger:hover {
+  background: rgba(255, 122, 112, 0.1);
+}
+
+/* ---- Generate dialog ---- */
+
+dialog {
+  width: min(720px, calc(100vw - 2rem));
+  max-height: 85vh;
+  padding: 0;
+  color: var(--text);
+  background: #0c1210;
+  border: 1px solid var(--line-2);
+  border-radius: 18px;
+  box-shadow: 0 40px 100px -20px rgba(0, 0, 0, 0.9);
+}
+
+dialog[open] {
+  display: flex;
+  flex-direction: column;
+}
+
+dialog::backdrop {
+  background: rgba(2, 6, 5, 0.72);
+  backdrop-filter: blur(4px);
+}
+
+.dlg-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--line);
+}
+
+.dlg-bar > div {
+  display: flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.dlg-bar h2 {
+  margin: 0;
+  font-size: 1.05rem;
+}
+
+.dlg-bar .pill {
+  height: 36px;
+  margin: 0;
+}
+
+dialog pre {
+  flex: 1;
+  margin: 0;
+  padding: 1rem 1.25rem;
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 0.82rem;
+  line-height: 1.65;
+  color: #cfe3dc;
+  background: #070b0a;
+}
+
+/* ---- Toast ---- */
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: 1.5rem;
+  z-index: 100;
+  max-width: calc(100vw - 2rem);
+  padding: 0.6rem 1rem;
+  font-size: 0.9rem;
+  color: var(--text);
+  background: var(--raise);
+  border: 1px solid var(--line-2);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px -12px rgba(0, 0, 0, 0.8);
+  opacity: 0;
+  pointer-events: none;
+  transform: translate(-50%, 12px);
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.toast.is-visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+/* ---- Preview mode (hides the editor chrome) ---- */
+
+.is-preview .sidebar,
+.is-preview .props,
+.is-preview .dropzone {
+  display: none;
+}
+
+.is-preview .workspace {
+  grid-template-columns: minmax(0, 1fr);
+}
+
+.is-preview .frame {
+  background: transparent;
+  border-color: transparent;
+}
+
+.is-preview .node,
+.is-preview .node:hover,
+.is-preview .node.is-selected {
+  background: none;
+  outline-color: transparent;
+}
+
+/* ---- Responsive ---- */
+
+@media (max-width: 1100px) {
+  .workspace {
+    grid-template-columns: 280px minmax(0, 1fr) 260px;
+  }
+}
+
+@media (max-width: 860px) {
+  .studio {
+    display: block;
+    height: auto;
+  }
+
+  .topbar {
+    flex-wrap: wrap;
+    padding: 0.75rem 1rem;
+  }
+
+  .toolbar {
+    flex-wrap: wrap;
+    width: 100%;
+    margin-left: 0;
+  }
+
+  .workspace,
+  .is-preview .workspace {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .canvas {
+    order: 1;
+    min-height: 30rem;
+    padding: 1rem;
+  }
+
+  .sidebar {
+    order: 2;
+    border-top: 1px solid var(--line);
+    border-right: 0;
+  }
+
+  .props {
+    order: 3;
+    border-top: 1px solid var(--line);
+    border-left: 0;
+  }
+
+  .device {
+    min-height: 28rem;
+    padding: 16px;
+    border-radius: 20px;
+  }
+}
+
+@media (max-width: 560px) {
+  .profile-name {
+    display: none;
+  }
+
+  .pill--outline,
+  .pill--solid {
+    margin-left: auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .toast,
+  .node,
+  .pill,
+  .comp {
+    transition-duration: 0.01ms;
+  }
+}
+
+.logo {
+  color: inherit;
+  text-decoration: none;
+}
+
+</style>
+</head>
+<body>
+
+  <noscript><p style="padding:1rem">DropJS Studio needs JavaScript.</p></noscript>
+
+  <div class="studio">
+
+    <!-- Top bar -->
+    <header class="topbar">
+      <a class="logo" href="index.html" title="Back to the website">
+        <svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="logo"></svg>
+        DropJS Studio
+      </a>
+      <input class="project-name" id="project-name" value="Untitled project" maxlength="40" aria-label="Project name">
+
+      <div class="toolbar">
+        <button class="icon-btn" id="btn-open" type="button" title="Open saved project" aria-label="Open saved project"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="folder"></svg></button>
+        <button class="icon-btn" id="btn-new" type="button" title="New project" aria-label="New project"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="plus"></svg></button>
+        <button class="icon-btn" id="btn-save" type="button" title="Save project" aria-label="Save project"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="save"></svg></button>
+        <button class="icon-btn" id="btn-undo" type="button" title="Undo" aria-label="Undo" disabled><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="undo"></svg></button>
+        <button class="icon-btn" id="btn-redo" type="button" title="Redo" aria-label="Redo" disabled><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="redo"></svg></button>
+        <button class="pill pill--outline" id="btn-preview" type="button"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="eye"></svg><span>Preview</span></button>
+        <button class="pill pill--solid" id="btn-generate" type="button"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="code"></svg>Generate</button>
+      </div>
+    </header>
+
+    <div class="workspace">
+
+      <!-- Left: components and tree -->
+      <aside class="sidebar">
+        <div class="tabs" role="tablist">
+          <button class="tab" id="tab-comp" type="button" role="tab" aria-selected="true" aria-controls="panel-comp"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="grid"></svg>Components</button>
+          <button class="tab" id="tab-tree" type="button" role="tab" aria-selected="false" aria-controls="panel-tree"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="tree"></svg>Tree</button>
+        </div>
+
+        <div class="panel-body" id="panel-comp" role="tabpanel" aria-labelledby="tab-comp">
+          <h2 class="panel-title">Components</h2>
+          <div id="comp-list"></div>
+        </div>
+
+        <div class="panel-body" id="panel-tree" role="tabpanel" aria-labelledby="tab-tree" hidden>
+          <h2 class="panel-title">Widget tree</h2>
+          <div id="tree"></div>
+        </div>
+      </aside>
+
+      <!-- Middle: canvas -->
+      <main class="canvas" id="canvas">
+        <div class="device">
+          <div class="frame">
+            <h1 class="frame-title" id="frame-title"></h1>
+            <div class="nodes" id="nodes"></div>
+            <div class="dropzone" id="dropzone"><span id="dropzone-text"></span></div>
+          </div>
+        </div>
+      </main>
+
+      <!-- Right: properties -->
+      <aside class="props">
+        <h2 class="panel-title">Properties</h2>
+        <div id="props"></div>
+      </aside>
+
+    </div>
+  </div>
+
+  <dialog id="gen-dialog" aria-labelledby="gen-title">
+    <div class="dlg-bar">
+      <h2 id="gen-title">Generated code</h2>
+      <div>
+        <button class="pill pill--solid" id="gen-copy" type="button">Copy</button>
+        <button class="icon-btn" id="gen-close" type="button" aria-label="Close"><svg class="i" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true" data-icon="close"></svg></button>
+      </div>
+    </div>
+    <pre><code id="gen-code"></code></pre>
+  </dialog>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+/**
+ * DropJS - a tiny dropdown prototype in plain JavaScript.
+ *
+ *   const menu = new DropJS({
+ *     target: "#dropdown",
+ *     options: [{ label: "Home", value: "home" }]
+ *   });
+ *   menu.open();
+ *   menu.close();
+ *
+ * See README.md for every setting.
+ */
+
+let dropCount = 0; // gives every dropdown a unique id
+
+class DropJS {
+  constructor(config) {
+    config = config || {};
+
+    // 1. Find the element the dropdown will be built inside
+    const root =
+      typeof config.target === "string"
+        ? document.querySelector(config.target)
+        : config.target;
+    if (!root) {
+      throw new Error('DropJS: target "' + config.target + '" was not found.');
+    }
+    if (!Array.isArray(config.options)) {
+      throw new Error("DropJS: options must be an array.");
+    }
+
+    // 2. Settings (whatever you pass in overrides these defaults)
+    this.config = Object.assign(
+      {
+        label: "Select",      // text on the button
+        triggerHTML: "",      // custom HTML for the button (overrides label)
+        searchable: false,    // adds a search box
+        selectable: false,    // button shows the chosen option
+        placeholder: "Search…",
+        emptyText: "No results",
+        align: "left",        // "left" or "right"
+        className: "",        // extra CSS class(es) for the wrapper
+        style: null,          // e.g. { accent: "#e11d48", radius: "4px" }
+        onSelect: null        // function (option, dropdown) {}
+      },
+      config
+    );
+
+    this.root = root;
+    this.options = config.options;
+    this.id = "dropjs-" + ++dropCount;
+    this.isSelect = this.config.selectable || this.config.searchable;
+
+    // 3. State
+    this.isOpen = false;
+    this.selected = null;  // the chosen option (select mode only)
+    this.visible = [];     // options currently shown in the list
+    this.items = [];       // the matching <li> elements
+    this.activeIndex = -1; // highlighted item (keyboard / hover)
+    this._typeBuffer = "";  // letters typed so far (type-ahead)
+    this._typeTimer = null;
+    this._spaceTyped = false;
+
+    this._build();
+    this._bind();
+    this._position(); // keeps even a closed menu inside the window
+  }
+
+  /* ---------------------------------------------------------
+     Public methods
+     --------------------------------------------------------- */
+
+  open() {
+    if (this.isOpen) return;
+    this.isOpen = true;
+    this._typeBuffer = "";
+
+    if (this.input) this.input.value = "";
+    this._renderList();
+    this._position();
+
+    this.menu.removeAttribute("inert");
+    this.root.classList.add("is-open");
+    this.trigger.setAttribute("aria-expanded", "true");
+    this.focusEl.focus({ preventScroll: true });
+  }
+
+  // returnFocus: send keyboard focus back to the button
+  close(returnFocus) {
+    if (!this.isOpen) return;
+    this.isOpen = false;
+
+    this.root.classList.remove("is-open");
+    this.trigger.setAttribute("aria-expanded", "false");
+    if (returnFocus) this.trigger.focus();
+
+    // "inert" keeps the hidden menu out of the Tab order. It is applied on the
+    // next tick so a Tab key press can finish moving focus first.
+    setTimeout(() => {
+      if (!this.isOpen) this.menu.setAttribute("inert", "");
+    }, 0);
+  }
+
+  toggle() {
+    if (this.isOpen) this.close();
+    else this.open();
+  }
+
+  // Value of the chosen option (select mode), or null
+  getValue() {
+    return this.selected ? this.selected.value : null;
+  }
+
+  // Replace the whole list of options. If the chosen option is still in the
+  // new list it stays chosen (matched by value), otherwise the choice is cleared.
+  setOptions(options) {
+    if (!Array.isArray(options)) {
+      throw new Error("DropJS: options must be an array.");
+    }
+    this.options = options;
+
+    if (this.selected) {
+      const same = options.find((o) => !o.divider && o.value === this.selected.value);
+      if (same) {
+        this.selected = same;
+      } else {
+        this._clearSelection();
+      }
+    }
+
+    if (this.isOpen) this._renderList();
+    this._position();
+  }
+
+  // Each key becomes a CSS variable: { accent: "red" } sets --dropjs-accent
+  setStyle(style) {
+    for (const key in style) {
+      this.root.style.setProperty("--dropjs-" + key, style[key]);
+    }
+  }
+
+  destroy() {
+    clearTimeout(this._typeTimer);
+    document.removeEventListener("pointerdown", this._onDocPointerDown);
+    document.removeEventListener("keydown", this._onDocKeydown);
+    window.removeEventListener("resize", this._onResize);
+    this.root.innerHTML = "";
+    this.root.classList.remove(
+      "dropjs", "dropjs--select", "dropjs--align-right", "has-value", "is-open", "is-up"
+    );
+  }
+
+  /* ---------------------------------------------------------
+     Building the HTML
+     --------------------------------------------------------- */
+
+  _build() {
+    const c = this.config;
+    const listRole = this.isSelect ? "listbox" : "menu";
+
+    this.root.innerHTML = "";
+    this.root.classList.add("dropjs");
+    if (this.isSelect) this.root.classList.add("dropjs--select");
+    if (c.align === "right") this.root.classList.add("dropjs--align-right");
+    if (c.className) {
+      c.className.split(" ").filter(Boolean).forEach((name) => {
+        this.root.classList.add(name);
+      });
+    }
+    if (c.style) this.setStyle(c.style);
+
+    // Button
+    this.trigger = document.createElement("button");
+    this.trigger.type = "button";
+    this.trigger.className = "dropjs-trigger";
+    this.trigger.setAttribute("aria-haspopup", listRole);
+    this.trigger.setAttribute("aria-expanded", "false");
+    this.trigger.setAttribute("aria-controls", this.id + "-menu");
+    this.trigger.innerHTML =
+      '<span class="dropjs-trigger-content"></span>' +
+      '<svg class="dropjs-chevron" viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">' +
+      '<path d="M5 7.5l5 5 5-5" fill="none" stroke="currentColor" stroke-width="1.8" ' +
+      'stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+    this.labelEl = this.trigger.querySelector(".dropjs-trigger-content");
+    if (c.triggerHTML) {
+      this.labelEl.innerHTML = c.triggerHTML;
+      this.trigger.setAttribute("aria-label", c.label); // name for screen readers
+    } else {
+      this.labelEl.textContent = c.label;
+    }
+
+    // Menu (starts hidden and inert)
+    this.menu = document.createElement("div");
+    this.menu.className = "dropjs-menu";
+    this.menu.id = this.id + "-menu";
+    this.menu.setAttribute("inert", "");
+
+    // Optional search box
+    if (c.searchable) {
+      const wrap = document.createElement("div");
+      wrap.className = "dropjs-search";
+
+      this.input = document.createElement("input");
+      this.input.type = "text";
+      this.input.className = "dropjs-input";
+      this.input.placeholder = c.placeholder;
+      this.input.setAttribute("autocomplete", "off");
+      this.input.setAttribute("aria-label", c.placeholder);
+      this.input.setAttribute("role", "combobox");
+      this.input.setAttribute("aria-expanded", "true");
+      this.input.setAttribute("aria-autocomplete", "list");
+      this.input.setAttribute("aria-controls", this.id + "-list");
+
+      wrap.appendChild(this.input);
+      this.menu.appendChild(wrap);
+    }
+
+    // List of options
+    this.list = document.createElement("ul");
+    this.list.className = "dropjs-list";
+    this.list.id = this.id + "-list";
+    this.list.setAttribute("role", listRole);
+    this.list.tabIndex = -1;
+    this.menu.appendChild(this.list);
+
+    // "No results" message
+    this.empty = document.createElement("div");
+    this.empty.className = "dropjs-empty";
+    this.empty.textContent = c.emptyText;
+    this.empty.hidden = true;
+    this.menu.appendChild(this.empty);
+
+    this.root.appendChild(this.trigger);
+    this.root.appendChild(this.menu);
+
+    // The element that holds keyboard focus while the menu is open
+    this.focusEl = this.input || this.list;
+  }
+
+  // Draws the options (filtered by the search box, if there is one)
+  _renderList() {
+    const query = this.input ? this.input.value.trim().toLowerCase() : "";
+    const itemRole = this.isSelect ? "option" : "menuitem";
+
+    this.list.innerHTML = "";
+    this.visible = [];
+    this.items = [];
+    this.activeIndex = -1;
+
+    this.options.forEach((option) => {
+      if (option.divider) {
+        if (query) return; // hide dividers while searching
+        const line = document.createElement("li");
+        line.className = "dropjs-divider";
+        line.setAttribute("role", "separator");
+        this.list.appendChild(line);
+        return;
+      }
+
+      if (query && option.label.toLowerCase().indexOf(query) === -1) return;
+
+      const index = this.visible.length;
+      const li = document.createElement("li");
+      li.className = "dropjs-item";
+      li.id = this.id + "-item-" + index;
+      li.dataset.index = index;
+      li.setAttribute("role", itemRole);
+      li.textContent = option.label;
+
+      if (this.isSelect) {
+        const isChosen = this.selected === option;
+        li.setAttribute("aria-selected", isChosen ? "true" : "false");
+        if (isChosen) li.classList.add("is-selected");
+      }
+
+      this.visible.push(option);
+      this.items.push(li);
+      this.list.appendChild(li);
+    });
+
+    this.empty.hidden = this.visible.length > 0;
+
+    // Highlight: first match while searching, otherwise the chosen option
+    const start = query ? 0 : this.visible.indexOf(this.selected);
+    this._setActive(this.visible.length ? start : -1);
+  }
+
+  /* ---------------------------------------------------------
+     Events
+     --------------------------------------------------------- */
+
+  _bind() {
+    // Click the button
+    this.trigger.addEventListener("click", () => this.toggle());
+
+    // Arrow keys on the button open the menu
+    this.trigger.addEventListener("keydown", (e) => {
+      if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+        e.preventDefault();
+        this.open();
+        if (this.activeIndex === -1) this._move(e.key === "ArrowDown" ? 1 : -1);
+      } else if (this._isTypingKey(e) && e.key !== " ") {
+        // typing on the closed button opens the menu and jumps to a match
+        e.preventDefault();
+        this.open();
+        if (this.config.searchable) {
+          this.input.value = e.key;
+          this._renderList();
+        } else {
+          this._typeahead(e.key);
+        }
+      }
+    });
+
+    // Keys inside the menu
+    this.menu.addEventListener("keydown", (e) => this._onMenuKeydown(e));
+    this.menu.addEventListener("keyup", (e) => {
+      // Space selects on key-up so the key press can't "click" the button we
+      // move focus back to.
+      if (e.key === " " && !this.config.searchable && this.isOpen) {
+        if (this._spaceTyped) {
+          this._spaceTyped = false;
+          return;
+        }
+        this._select(this.activeIndex);
+      }
+    });
+
+    // Search box
+    if (this.input) {
+      this.input.addEventListener("input", () => this._renderList());
+    }
+
+    // Mouse: choose an item, highlight on hover
+    this.list.addEventListener("click", (e) => {
+      const li = e.target.closest(".dropjs-item");
+      if (li) this._select(Number(li.dataset.index));
+    });
+    this.list.addEventListener("mousemove", (e) => {
+      const li = e.target.closest(".dropjs-item");
+      if (!li) return;
+      const index = Number(li.dataset.index);
+      if (index !== this.activeIndex) this._setActive(index);
+    });
+    // keep focus where it is when clicking inside the list
+    this.list.addEventListener("mousedown", (e) => e.preventDefault());
+
+    // Click outside closes
+    this._onDocPointerDown = (e) => {
+      if (this.isOpen && !this.root.contains(e.target)) this.close();
+    };
+    document.addEventListener("pointerdown", this._onDocPointerDown);
+
+    // Escape closes
+    this._onDocKeydown = (e) => {
+      if (e.key === "Escape" && this.isOpen) {
+        e.preventDefault();
+        this.close(true);
+      }
+    };
+    document.addEventListener("keydown", this._onDocKeydown);
+
+    // Keep the menu on screen when the window changes size
+    this._onResize = () => this._position();
+    window.addEventListener("resize", this._onResize);
+  }
+
+  _onMenuKeydown(e) {
+    const searchable = this.config.searchable;
+
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      this._move(1);
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      this._move(-1);
+    } else if (e.key === "Home" && !searchable) {
+      e.preventDefault();
+      this._setActive(0);
+    } else if (e.key === "End" && !searchable) {
+      e.preventDefault();
+      this._setActive(this.visible.length - 1);
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (!e.repeat) this._select(this.activeIndex);
+    } else if (e.key === " " && !searchable) {
+      e.preventDefault(); // stops the page scrolling
+      if (this._typeBuffer) {
+        this._spaceTyped = true; // part of a word being typed, not "select"
+        this._typeahead(" ");
+      }
+    } else if (e.key === "Tab") {
+      this.close();
+    } else if (!searchable && this._isTypingKey(e)) {
+      e.preventDefault();
+      this._typeahead(e.key);
+    }
+  }
+
+  /* ---------------------------------------------------------
+     Helpers
+     --------------------------------------------------------- */
+
+  _isTypingKey(e) {
+    return e.key.length === 1 && !e.ctrlKey && !e.metaKey && !e.altKey;
+  }
+
+  // Type-ahead: jump to the option whose label starts with the letters typed.
+  // The typed letters are forgotten after 0.7 seconds without typing.
+  _typeahead(char) {
+    clearTimeout(this._typeTimer);
+    this._typeBuffer += char.toLowerCase();
+    this._typeTimer = setTimeout(() => {
+      this._typeBuffer = "";
+    }, 700);
+
+    const count = this.visible.length;
+    if (!count) return;
+
+    // pressing the same letter again ("aaa") cycles through that letter's options
+    const buffer = this._typeBuffer;
+    const sameLetter = buffer.split("").every((c) => c === buffer[0]);
+    const search = sameLetter ? buffer[0] : buffer;
+    const start = sameLetter ? this.activeIndex + 1 : Math.max(this.activeIndex, 0);
+
+    for (let i = 0; i < count; i++) {
+      const index = (start + i) % count;
+      if (this.visible[index].label.toLowerCase().indexOf(search) === 0) {
+        this._setActive(index);
+        return;
+      }
+    }
+  }
+
+  // Forget the chosen option and show the original button text again
+  _clearSelection() {
+    this.selected = null;
+    if (this.config.triggerHTML) {
+      this.labelEl.innerHTML = this.config.triggerHTML;
+    } else {
+      this.labelEl.textContent = this.config.label;
+    }
+    this.root.classList.remove("has-value");
+  }
+
+  // Move the highlight up (-1) or down (+1), wrapping around
+  _move(direction) {
+    const count = this.visible.length;
+    if (!count) return;
+    if (this.activeIndex === -1) {
+      this._setActive(direction > 0 ? 0 : count - 1);
+    } else {
+      this._setActive((this.activeIndex + direction + count) % count);
+    }
+  }
+
+  _setActive(index) {
+    const previous = this.items[this.activeIndex];
+    if (previous) previous.classList.remove("is-active");
+
+    this.activeIndex = index;
+    const item = this.items[index];
+
+    if (!item) {
+      this.focusEl.removeAttribute("aria-activedescendant");
+      return;
+    }
+
+    item.classList.add("is-active");
+    this.focusEl.setAttribute("aria-activedescendant", item.id);
+
+    // Scroll the list (not the page) so the item is visible
+    const top = item.offsetTop;
+    const bottom = top + item.offsetHeight;
+    if (top < this.list.scrollTop) {
+      this.list.scrollTop = top;
+    } else if (bottom > this.list.scrollTop + this.list.clientHeight) {
+      this.list.scrollTop = bottom - this.list.clientHeight;
+    }
+  }
+
+  _select(index) {
+    const option = this.visible[index];
+    if (!option) return;
+
+    if (this.isSelect) {
+      this.selected = option;
+      this.labelEl.textContent = option.label;
+      this.root.classList.add("has-value");
+    }
+
+    this.close(true);
+    if (typeof this.config.onSelect === "function") {
+      this.config.onSelect(option, this);
+    }
+  }
+
+  // Keep the menu inside the window: slide it sideways, or open it upwards
+  _position() {
+    const gap = 8;
+    const box = this.root.getBoundingClientRect();
+    const menuWidth = this.menu.offsetWidth;
+    const menuHeight = this.menu.offsetHeight;
+    const viewWidth = document.documentElement.clientWidth;
+    const viewHeight = window.innerHeight;
+
+    let left = this.config.align === "right" ? box.right - menuWidth : box.left;
+    left = Math.max(gap, Math.min(left, viewWidth - menuWidth - gap));
+    this.menu.style.left = left - box.left + "px";
+
+    const noRoomBelow = box.bottom + gap + menuHeight > viewHeight;
+    const roomAbove = box.top - gap - menuHeight > 0;
+    this.root.classList.toggle("is-up", noRoomBelow && roomAbove);
+  }
+}
+
+window.DropJS = DropJS;
+
+</script>
+  <script>
+  (function () {
+    "use strict";
+
+    // Friendly hint if the sibling files were not found
+    const studioEl = document.querySelector(".studio");
+    const cssLoaded = getComputedStyle(studioEl).display === "grid" || window.innerWidth <= 860;
+    if (typeof DropJS === "undefined" || !cssLoaded) {
+      document.body.insertAdjacentHTML("afterbegin",
+        '<p style="padding:1rem;margin:0;font:16px sans-serif;background:#fff3b0">' +
+        "style.css, studio.css or dropjs.js was not found. Keep studio.html, style.css, studio.css and dropjs.js in the same folder, " +
+        "or open standalone/studio.html, which needs nothing else.</p>");
+      if (typeof DropJS === "undefined") return;
+    }
+
+    const $ = (selector, root) => (root || document).querySelector(selector);
+    const $$ = (selector, root) => Array.from((root || document).querySelectorAll(selector));
+
+    /* ------------------------------------------------------
+       Icons (simple strokes that inherit the text colour)
+       ------------------------------------------------------ */
+    const ICONS = {
+      logo: '<path d="M12 3l9 5-9 5-9-5z" fill="currentColor"/><path d="M3 12.5l9 5 9-5"/><path d="M3 16.5l9 5 9-5"/>',
+      folder: '<path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>',
+      plus: '<rect x="4" y="4" width="16" height="16" rx="2"/><path d="M12 8v8M8 12h8"/>',
+      save: '<path d="M5 4h11l3 3v13H5z"/><path d="M8 4v5h7V4M8 20v-6h8v6"/>',
+      undo: '<path d="M9 14L4 9l5-5"/><path d="M4 9h10a6 6 0 0 1 0 12h-3"/>',
+      redo: '<path d="M15 14l5-5-5-5"/><path d="M20 9H10a6 6 0 0 0 0 12h3"/>',
+      eye: '<path d="M2 12s4-7 10-7 10 7 10 7-4 7-10 7S2 12 2 12z"/><circle cx="12" cy="12" r="3"/>',
+      edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="M13 7l4 4"/>',
+      code: '<path d="M8 7l-5 5 5 5M16 7l5 5-5 5"/>',
+      close: '<path d="M6 6l12 12M18 6L6 18"/>',
+      trash: '<path d="M4 7h16M9 7V4h6v3M6 7l1 13h10l1-13"/>',
+      grid: '<rect x="3.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="3.5" width="7" height="7" rx="1.5"/><rect x="3.5" y="13.5" width="7" height="7" rx="1.5"/><rect x="13.5" y="13.5" width="7" height="7" rx="1.5"/>',
+      tree: '<rect x="3" y="3" width="7" height="5" rx="1"/><rect x="14" y="9.5" width="7" height="5" rx="1"/><rect x="14" y="17" width="7" height="4" rx="1"/><path d="M6.5 8v10h7.5M6.5 12h7.5"/>',
+      menu: '<path d="M4 7h16M4 12h16M4 17h10"/>',
+      nav: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.5l-2 5-5 2 2-5z"/>',
+      user: '<circle cx="12" cy="8" r="4"/><path d="M4.5 20a7.5 7.5 0 0 1 15 0"/>',
+      select: '<rect x="3" y="6" width="18" height="12" rx="2.5"/><path d="M14.5 11.5l2 2 2-2"/>',
+      search: '<circle cx="11" cy="11" r="6.5"/><path d="M16 16l4.5 4.5"/>',
+      grip: '<g fill="currentColor" stroke="none"><circle cx="9" cy="6" r="1.6"/><circle cx="15" cy="6" r="1.6"/><circle cx="9" cy="12" r="1.6"/><circle cx="15" cy="12" r="1.6"/><circle cx="9" cy="18" r="1.6"/><circle cx="15" cy="18" r="1.6"/></g>'
+    };
+
+    function icon(name, extraClass) {
+      return '<svg class="i ' + (extraClass || "") + '" width="22" height="22" viewBox="0 0 24 24" aria-hidden="true">' + ICONS[name] + "</svg>";
+    }
+
+    $$("[data-icon]").forEach((el) => { el.innerHTML = ICONS[el.dataset.icon]; });
+
+    /* ------------------------------------------------------
+       Component types and default settings
+       ------------------------------------------------------ */
+    const COUNTRIES = [
+      "Argentina", "Australia", "Brazil", "Canada", "Chile", "Egypt", "France",
+      "Germany", "India", "Indonesia", "Japan", "Kenya", "Mexico", "Netherlands",
+      "New Zealand", "Nigeria", "Norway", "Portugal", "South Korea", "Spain",
+      "Sweden", "Thailand", "Vietnam"
+    ].join("\n");
+
+    const DEFAULTS = {
+      label: "Menu", options: "", searchable: false, selectable: false, align: "left",
+      ghost: false, wide: false, avatar: false,
+      accent: "#2de2b0", bg: "#121a18", text: "#e6efec", radius: 10
+    };
+
+    const TYPES = {
+      menu: { name: "Menu", icon: "menu", config: { label: "Menu", options: "Home\nSettings\nProfile" } },
+      navigation: { name: "Navigation", icon: "nav", config: { label: "Explore", ghost: true, options: "Quick start\nSearchable\nCustomization\n---\nBack to top" } },
+      profile: { name: "Profile menu", icon: "user", config: { label: "Account menu", avatar: true, ghost: true, align: "right", options: "View profile\nAccount settings\nBilling\n---\nSign out" } },
+      select: { name: "Select", icon: "select", config: { label: "Sort by", selectable: true, wide: true, options: "Newest\nOldest\nMost popular\nA to Z" } },
+      searchable: { name: "Searchable", icon: "search", config: { label: "Choose a country", searchable: true, wide: true, options: COUNTRIES } }
+    };
+
+    const AVATAR_HTML = '<span class="avatar">SR</span><span class="profile-name">Sam Rivera</span>';
+
+    /* ------------------------------------------------------
+       State
+       ------------------------------------------------------ */
+    const state = { nodes: [], selected: null };
+    let instances = {};  // id -> DropJS
+    let idCounter = 0;
+
+    const nameInput = $("#project-name");
+    const nodesEl = $("#nodes");
+    const dropzone = $("#dropzone");
+    const canvas = $("#canvas");
+    const treeEl = $("#tree");
+    const propsEl = $("#props");
+
+    function current() {
+      return state.nodes.find((n) => n.id === state.selected) || null;
+    }
+
+    function makeNode(type) {
+      idCounter += 1;
+      return Object.assign({ id: "dd" + idCounter, type: type }, DEFAULTS, TYPES[type].config);
+    }
+
+    /* ------------------------------------------------------
+       Toast
+       ------------------------------------------------------ */
+    const toast = $("#toast");
+    let toastTimer;
+    function notify(message) {
+      toast.textContent = message;
+      toast.classList.add("is-visible");
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => toast.classList.remove("is-visible"), 2200);
+    }
+
+    /* ------------------------------------------------------
+       Turning a node into a DropJS dropdown
+       ------------------------------------------------------ */
+    function slug(text) {
+      return text.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-+|-+$/g, "") || "option";
+    }
+
+    // One option per line. A line with --- becomes a divider.
+    function parseOptions(text) {
+      return text.split("\n").map((line) => line.trim()).filter(Boolean).map((line) => {
+        return line === "---" ? { divider: true } : { label: line, value: slug(line) };
+      });
+    }
+
+    function styleOf(n) {
+      return {
+        accent: n.accent,
+        bg: n.bg,
+        text: n.text,
+        radius: n.radius + "px",
+        muted: "color-mix(in srgb, " + n.text + " 55%, " + n.bg + ")",
+        border: "color-mix(in srgb, " + n.text + " 14%, " + n.bg + ")"
+      };
+    }
+
+    function classOf(n) {
+      return [n.ghost ? "dropjs--ghost" : "", n.wide ? "dropjs--wide" : ""].filter(Boolean).join(" ");
+    }
+
+    function buildConfig(n, host) {
+      return {
+        target: host,
+        label: n.label,
+        triggerHTML: n.avatar ? AVATAR_HTML : "",
+        searchable: n.searchable,
+        selectable: n.selectable,
+        align: n.align,
+        className: classOf(n),
+        style: styleOf(n),
+        placeholder: "Search…",
+        options: parseOptions(n.options),
+        onSelect: (option) => notify("Selected " + option.label)
+      };
+    }
+
+    /* ------------------------------------------------------
+       Rendering
+       ------------------------------------------------------ */
+    function renderCanvas() {
+      Object.keys(instances).forEach((id) => instances[id].destroy());
+      instances = {};
+      nodesEl.innerHTML = "";
+
+      state.nodes.forEach((n) => {
+        const wrap = document.createElement("div");
+        wrap.className = "node" + (n.id === state.selected ? " is-selected" : "");
+        wrap.dataset.id = n.id;
+        const host = document.createElement("div");
+        wrap.appendChild(host);
+        nodesEl.appendChild(wrap);
+        instances[n.id] = new DropJS(buildConfig(n, host));
+      });
+
+      const hasNodes = state.nodes.length > 0;
+      dropzone.classList.toggle("is-compact", hasNodes);
+      $("#dropzone-text").textContent = hasNodes ? "Drop another dropdown here" : "Drop dropdowns here";
+      $("#frame-title").textContent = nameInput.value || "Untitled project";
+    }
+
+    function renderTree() {
+      treeEl.innerHTML = "";
+      const root = document.createElement("div");
+      root.className = "tree-root";
+      root.textContent = nameInput.value || "Untitled project";
+      treeEl.appendChild(root);
+
+      if (!state.nodes.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.style.padding = "0.4rem 1.5rem";
+        empty.textContent = "Nothing added yet.";
+        treeEl.appendChild(empty);
+        return;
+      }
+
+      state.nodes.forEach((n) => {
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className = "tree-item" + (n.id === state.selected ? " is-selected" : "");
+        button.innerHTML = icon(TYPES[n.type].icon);
+        const text = document.createElement("span");
+        text.textContent = n.label;
+        button.appendChild(text);
+        button.addEventListener("click", () => select(n.id));
+        treeEl.appendChild(button);
+      });
+    }
+
+    function renderProps() {
+      const n = current();
+      if (!n) {
+        propsEl.innerHTML = '<p class="muted">No component selected</p>';
+        return;
+      }
+
+      propsEl.innerHTML =
+        '<div class="field"><label for="p-label">Label</label><input id="p-label" type="text" maxlength="40"></div>' +
+        '<div class="field"><label for="p-options">Options</label><textarea id="p-options" rows="6" spellcheck="false"></textarea>' +
+        "<small>One per line. Use --- for a divider.</small></div>" +
+        '<div class="field"><span class="flabel">Behavior</span>' +
+        '<label class="check"><input type="checkbox" id="p-searchable"><span>Searchable</span></label>' +
+        '<label class="check"><input type="checkbox" id="p-selectable"><span>Show chosen option</span></label></div>' +
+        '<div class="field"><span class="flabel">Menu alignment</span><div class="seg" role="group" aria-label="Menu alignment">' +
+        '<button type="button" data-align="left">Left</button><button type="button" data-align="right">Right</button></div></div>' +
+        '<div class="field"><span class="flabel">Style</span>' +
+        '<label class="color-row">Accent <input type="color" id="p-accent"></label>' +
+        '<label class="color-row">Background <input type="color" id="p-bg"></label>' +
+        '<label class="color-row">Text <input type="color" id="p-text"></label>' +
+        '<label class="color-row" for="p-radius">Corner radius <output id="p-radius-out"></output></label>' +
+        '<input type="range" id="p-radius" min="0" max="24" step="1"></div>' +
+        '<button type="button" class="danger" id="p-delete">Delete component</button>';
+
+      // Fill in the current values
+      $("#p-label").value = n.label;
+      $("#p-options").value = n.options;
+      $("#p-searchable").checked = n.searchable;
+      $("#p-accent").value = n.accent;
+      $("#p-bg").value = n.bg;
+      $("#p-text").value = n.text;
+      $("#p-radius").value = n.radius;
+      $("#p-radius-out").textContent = n.radius + "px";
+      syncSelectable(n);
+      syncAlign(n);
+
+      // Listen for edits
+      $("#p-label").addEventListener("input", (e) => patch({ label: e.target.value }, "label"));
+      $("#p-options").addEventListener("input", (e) => patch({ options: e.target.value }, "options"));
+      $("#p-searchable").addEventListener("change", (e) => {
+        patch({ searchable: e.target.checked });
+        syncSelectable(current());
+      });
+      $("#p-selectable").addEventListener("change", (e) => patch({ selectable: e.target.checked }));
+      $$("[data-align]", propsEl).forEach((button) => {
+        button.addEventListener("click", () => {
+          patch({ align: button.dataset.align });
+          syncAlign(current());
+        });
+      });
+      ["accent", "bg", "text"].forEach((key) => {
+        $("#p-" + key).addEventListener("input", (e) => patch({ [key]: e.target.value }, key));
+      });
+      $("#p-radius").addEventListener("input", (e) => {
+        $("#p-radius-out").textContent = e.target.value + "px";
+        patch({ radius: Number(e.target.value) }, "radius");
+      });
+      $("#p-delete").addEventListener("click", () => removeNode(n.id));
+    }
+
+    // A searchable dropdown always shows the chosen option
+    function syncSelectable(n) {
+      const box = $("#p-selectable");
+      box.checked = n.searchable || n.selectable;
+      box.disabled = n.searchable;
+    }
+
+    function syncAlign(n) {
+      $$("[data-align]", propsEl).forEach((button) => {
+        button.setAttribute("aria-pressed", String(button.dataset.align === n.align));
+      });
+    }
+
+    function renderAll() {
+      renderCanvas();
+      renderTree();
+      renderProps();
+    }
+
+    /* ------------------------------------------------------
+       Editing: select, add, change, delete
+       ------------------------------------------------------ */
+    function select(id) {
+      if (state.selected === id) return;
+      state.selected = id;
+      $$(".node").forEach((el) => el.classList.toggle("is-selected", el.dataset.id === id));
+      renderTree();
+      renderProps();
+    }
+
+    function addNode(type) {
+      const node = makeNode(type);
+      state.nodes.push(node);
+      state.selected = node.id;
+      renderAll();
+      commit();
+    }
+
+    function patch(changes, key) {
+      const n = current();
+      if (!n) return;
+      Object.assign(n, changes);
+      renderCanvas();
+      renderTree();
+      commit(key);
+    }
+
+    function removeNode(id) {
+      state.nodes = state.nodes.filter((n) => n.id !== id);
+      state.selected = null;
+      renderAll();
+      commit();
+    }
+
+    /* ------------------------------------------------------
+       Undo / redo (snapshots of the node list)
+       ------------------------------------------------------ */
+    const undoStack = [];
+    let redoStack = [];
+    let lastSnap = "";
+    let lastKey = null;
+    let lastTime = 0;
+
+    const btnUndo = $("#btn-undo");
+    const btnRedo = $("#btn-redo");
+
+    function snapshot() {
+      return JSON.stringify(state.nodes);
+    }
+
+    function updateHistoryButtons() {
+      btnUndo.disabled = undoStack.length === 0;
+      btnRedo.disabled = redoStack.length === 0;
+    }
+
+    // Call after every change. Rapid edits to the same field count as one step.
+    function commit(key) {
+      const snap = snapshot();
+      if (snap === lastSnap) return;
+      const sameBurst = key && key === lastKey && Date.now() - lastTime < 800;
+      if (!sameBurst) undoStack.push(lastSnap);
+      redoStack = [];
+      lastSnap = snap;
+      lastKey = key || null;
+      lastTime = Date.now();
+      updateHistoryButtons();
+    }
+
+    function restore(snap) {
+      state.nodes = JSON.parse(snap);
+      if (!state.nodes.some((n) => n.id === state.selected)) state.selected = null;
+      lastKey = null;
+      renderAll();
+      updateHistoryButtons();
+    }
+
+    btnUndo.addEventListener("click", () => {
+      if (!undoStack.length) return;
+      redoStack.push(lastSnap);
+      lastSnap = undoStack.pop();
+      restore(lastSnap);
+    });
+
+    btnRedo.addEventListener("click", () => {
+      if (!redoStack.length) return;
+      undoStack.push(lastSnap);
+      lastSnap = redoStack.pop();
+      restore(lastSnap);
+    });
+
+    /* ------------------------------------------------------
+       Left panel: component list, tabs, drag and drop
+       ------------------------------------------------------ */
+    const compList = $("#comp-list");
+    Object.keys(TYPES).forEach((type) => {
+      const t = TYPES[type];
+      const el = document.createElement("div");
+      el.className = "comp";
+      el.draggable = true;
+      el.tabIndex = 0;
+      el.setAttribute("role", "button");
+      el.setAttribute("aria-label", "Add " + t.name);
+      el.innerHTML = icon(t.icon) + "<span>" + t.name + "</span>" + icon("grip", "grip");
+
+      el.addEventListener("click", () => addNode(type));
+      el.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          addNode(type);
+        }
+      });
+      el.addEventListener("dragstart", (e) => {
+        e.dataTransfer.setData("text/plain", type);
+        e.dataTransfer.effectAllowed = "copy";
+      });
+      compList.appendChild(el);
+    });
+
+    canvas.addEventListener("dragover", (e) => {
+      e.preventDefault();
+      dropzone.classList.add("is-over");
+    });
+    canvas.addEventListener("dragleave", (e) => {
+      if (!canvas.contains(e.relatedTarget)) dropzone.classList.remove("is-over");
+    });
+    canvas.addEventListener("drop", (e) => {
+      e.preventDefault();
+      dropzone.classList.remove("is-over");
+      const type = e.dataTransfer.getData("text/plain");
+      if (TYPES[type]) addNode(type);
+    });
+
+    // Clicking a dropdown selects it. Clicking empty canvas clears the selection.
+    canvas.addEventListener("pointerdown", (e) => {
+      const wrap = e.target.closest(".node");
+      select(wrap ? wrap.dataset.id : null);
+    });
+
+    const tabComp = $("#tab-comp");
+    const tabTree = $("#tab-tree");
+    function showTab(which) {
+      const isComp = which === "comp";
+      tabComp.setAttribute("aria-selected", String(isComp));
+      tabTree.setAttribute("aria-selected", String(!isComp));
+      $("#panel-comp").hidden = !isComp;
+      $("#panel-tree").hidden = isComp;
+    }
+    tabComp.addEventListener("click", () => showTab("comp"));
+    tabTree.addEventListener("click", () => showTab("tree"));
+
+    /* ------------------------------------------------------
+       Top bar: project name, open, new, save, preview
+       ------------------------------------------------------ */
+    const STORAGE_KEY = "dropjs-studio-project";
+
+    nameInput.addEventListener("input", () => {
+      $("#frame-title").textContent = nameInput.value || "Untitled project";
+      renderTree();
+    });
+
+    $("#btn-save").addEventListener("click", () => {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify({ name: nameInput.value, nodes: state.nodes }));
+        notify("Saved in this browser");
+      } catch (error) {
+        notify("Could not save here (browser storage is blocked)");
+      }
+    });
+
+    $("#btn-open").addEventListener("click", () => {
+      let saved = null;
+      try {
+        saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
+      } catch (error) {
+        saved = null;
+      }
+      if (!saved || !Array.isArray(saved.nodes)) {
+        notify("No saved project yet. Use Save first.");
+        return;
+      }
+      nameInput.value = saved.name || "Untitled project";
+      state.nodes = saved.nodes;
+      state.selected = null;
+      idCounter = state.nodes.reduce((max, n) => Math.max(max, parseInt(n.id.slice(2), 10) || 0), idCounter);
+      renderAll();
+      commit();
+      notify("Opened “" + nameInput.value + "”");
+    });
+
+    $("#btn-new").addEventListener("click", () => {
+      nameInput.value = "Untitled project";
+      state.nodes = [];
+      state.selected = null;
+      renderAll();
+      commit();
+    });
+
+    const btnPreview = $("#btn-preview");
+    btnPreview.addEventListener("click", () => {
+      const on = document.body.classList.toggle("is-preview");
+      $("span", btnPreview).textContent = on ? "Edit" : "Preview";
+      $("svg", btnPreview).innerHTML = ICONS[on ? "edit" : "eye"];
+    });
+
+    /* ------------------------------------------------------
+       Generate: turn the canvas into copy-paste code
+       ------------------------------------------------------ */
+    function optionLine(o) {
+      return o.divider
+        ? "{ divider: true }"
+        : "{ label: " + JSON.stringify(o.label) + ", value: " + JSON.stringify(o.value) + " }";
+    }
+
+    function nodeToJs(n) {
+      const lines = [
+        '  target: "#' + n.id + '"',
+        "  label: " + JSON.stringify(n.label)
+      ];
+      if (n.avatar) lines.push("  triggerHTML: " + JSON.stringify(AVATAR_HTML));
+      if (n.searchable) lines.push("  searchable: true");
+      if (n.selectable && !n.searchable) lines.push("  selectable: true");
+      if (n.align === "right") lines.push('  align: "right"');
+      if (classOf(n)) lines.push("  className: " + JSON.stringify(classOf(n)));
+      const style = styleOf(n);
+      lines.push("  style: {\n" + Object.keys(style).map((k) => "    " + k + ": " + JSON.stringify(style[k])).join(",\n") + "\n  }");
+      lines.push("  options: [\n" + parseOptions(n.options).map((o) => "    " + optionLine(o)).join(",\n") + "\n  ]");
+      return "const " + n.id + " = new DropJS({\n" + lines.join(",\n") + "\n});";
+    }
+
+    function generateCode() {
+      if (!state.nodes.length) return "// Add a component to the canvas first.";
+      const markup = state.nodes.map((n) => '<div id="' + n.id + '"></div>').join("\n");
+      return (
+        '<link rel="stylesheet" href="style.css">\n\n' +
+        markup +
+        '\n\n<script src="dropjs.js"><\/script>\n<script>\n' +
+        state.nodes.map(nodeToJs).join("\n\n") +
+        "\n<\/script>"
+      );
+    }
+
+    const dialog = $("#gen-dialog");
+    const copyButton = $("#gen-copy");
+
+    $("#btn-generate").addEventListener("click", () => {
+      $("#gen-code").textContent = generateCode();
+      copyButton.textContent = "Copy";
+      dialog.showModal();
+    });
+    $("#gen-close").addEventListener("click", () => dialog.close());
+    dialog.addEventListener("click", (e) => {
+      if (e.target === dialog) dialog.close(); // click on the backdrop
+    });
+
+    copyButton.addEventListener("click", async () => {
+      const text = $("#gen-code").textContent;
+      try {
+        await navigator.clipboard.writeText(text);
+      } catch (error) {
+        const area = document.createElement("textarea");
+        area.value = text;
+        dialog.appendChild(area);
+        area.select();
+        document.execCommand("copy");
+        area.remove();
+      }
+      copyButton.textContent = "Copied";
+      setTimeout(() => { copyButton.textContent = "Copy"; }, 1500);
+    });
+
+    /* ------------------------------------------------------
+       Start with two example dropdowns
+       ------------------------------------------------------ */
+    state.nodes = [makeNode("navigation"), makeNode("searchable")];
+    renderAll();
+    lastSnap = snapshot();
+  })();
+  </script>
+</body>
+</html>

@@ -102,6 +102,7 @@ Open `studio.html` (or the "Open Studio" button on the website).
 | `close()` | Closes the menu |
 | `toggle()` | Opens or closes |
 | `getValue()` | Value of the chosen option (select mode), or `null` |
+| `setOptions(list)` | Replaces all options. The chosen option stays chosen if its `value` is still in the new list, otherwise the choice is cleared |
 | `setStyle(obj)` | Updates the style variables |
 | `destroy()` | Removes the dropdown and its listeners |
 
@@ -113,6 +114,7 @@ Open `studio.html` (or the "Open Studio" button on the website).
 | ↓ / ↑ | Move through options (wraps around) |
 | Home / End | First / last option (not in searchable menus) |
 | Enter (or Space) | Choose the highlighted option |
+| Letters | Type-ahead: jump to the option that starts with what you type (also opens the menu from the button). Typing the same letter again cycles through matches. In searchable menus, typing filters instead |
 | Esc | Close and return to the button |
 | Tab | Close and move on |
 
@@ -131,5 +133,4 @@ Variables: `--dropjs-accent`, `--dropjs-bg`, `--dropjs-text`, `--dropjs-muted`, 
 ## Known limits of the prototype
 
 - Needs a modern browser (uses `color-mix()`, the `inert` attribute and `:focus-visible`).
-- Options are read when the menu opens, but there is no method to replace them yet.
-- No multi-select, grouped options, or type-ahead by letter.
+- No multi-select or grouped options.

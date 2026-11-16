@@ -1,0 +1,253 @@
+/* ==========================================================
+   PART 1: DropJS component styles
+   Customize with CSS variables (or setStyle() / the style option):
+   accent, bg, text, muted, border, radius
+   ========================================================== */
+
+.dropjs {
+  --dropjs-accent: #2de2b0;
+  --dropjs-bg: #121a18;
+  --dropjs-text: #e6efec;
+  --dropjs-muted: #8a9b96;
+  --dropjs-border: #2b3b36;
+  --dropjs-radius: 10px;
+
+  position: relative;
+  display: inline-block;
+  font-size: 0.95rem;
+  color: var(--dropjs-text);
+}
+
+.dropjs.is-open {
+  z-index: 50; /* open menus sit above everything after them */
+}
+
+/* ---- Button ---- */
+
+.dropjs-trigger {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.6rem;
+  width: 100%;
+  padding: 0.6rem 0.85rem;
+  font: inherit;
+  font-weight: 500;
+  color: inherit;
+  background: var(--dropjs-bg);
+  border: 1px solid var(--dropjs-border);
+  border-radius: var(--dropjs-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.35);
+  cursor: pointer;
+  transition: border-color 0.15s, box-shadow 0.15s, background-color 0.15s;
+}
+
+.dropjs-trigger:hover {
+  border-color: color-mix(in srgb, var(--dropjs-text) 65%, var(--dropjs-border));
+}
+
+.dropjs-trigger:focus-visible {
+  outline: 2px solid var(--dropjs-accent);
+  outline-offset: 2px;
+}
+
+.dropjs.is-open .dropjs-trigger {
+  border-color: var(--dropjs-accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dropjs-accent) 22%, transparent);
+}
+
+.dropjs-trigger-content {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
+}
+
+.dropjs-chevron {
+  flex: none;
+  color: var(--dropjs-muted);
+  transition: transform 0.2s ease;
+}
+
+.dropjs.is-open .dropjs-chevron {
+  transform: rotate(180deg);
+}
+
+/* select mode: grey text until something is chosen */
+.dropjs--select:not(.has-value) .dropjs-trigger-content {
+  color: var(--dropjs-muted);
+}
+
+/* ---- Variants you can add with className ---- */
+
+.dropjs--wide {
+  display: block;
+  width: min(100%, 20rem);
+}
+
+.dropjs--ghost .dropjs-trigger {
+  background: transparent;
+  border-color: transparent;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.dropjs--ghost .dropjs-trigger:hover,
+.dropjs--ghost.is-open .dropjs-trigger {
+  background: transparent;
+  border-color: transparent;
+  box-shadow: inset 0 -3px 0 var(--dropjs-accent); /* red underline, like a site nav */
+}
+
+/* ---- Menu (animated open and close) ---- */
+
+.dropjs-menu {
+  position: absolute;
+  top: calc(100% + 8px);
+  left: 0;
+  width: max-content;
+  min-width: max(100%, 12rem);
+  max-width: calc(100vw - 16px);
+  padding: 0.35rem;
+  background: var(--dropjs-bg);
+  border: 1px solid var(--dropjs-border);
+  border-radius: var(--dropjs-radius);
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.4), 0 18px 40px -12px rgba(0, 0, 0, 0.7);
+
+  /* closed state */
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translateY(-6px) scale(0.98);
+  transform-origin: top left;
+  transition: opacity 0.16s ease, transform 0.16s ease, visibility 0s linear 0.16s;
+}
+
+.dropjs--align-right .dropjs-menu {
+  transform-origin: top right;
+}
+
+/* opens upwards when there is no room below (JS adds .is-up) */
+.dropjs.is-up .dropjs-menu {
+  top: auto;
+  bottom: calc(100% + 8px);
+  transform: translateY(6px) scale(0.98);
+  transform-origin: bottom left;
+}
+
+.dropjs--align-right.is-up .dropjs-menu {
+  transform-origin: bottom right;
+}
+
+/* open state (must stay after the rules above) */
+.dropjs.is-open .dropjs-menu {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transform: none;
+  transition-delay: 0s;
+}
+
+/* ---- Search box ---- */
+
+.dropjs-search {
+  padding: 0.15rem 0.15rem 0.4rem;
+}
+
+.dropjs-input {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  font: inherit;
+  font-size: 1rem; /* 16px stops iOS zooming in on focus */
+  color: inherit;
+  background: color-mix(in srgb, var(--dropjs-text) 4%, var(--dropjs-bg));
+  border: 1px solid var(--dropjs-border);
+  border-radius: max(4px, calc(var(--dropjs-radius) - 4px));
+  outline: none;
+}
+
+.dropjs-input:focus {
+  border-color: var(--dropjs-accent);
+}
+
+.dropjs-input::placeholder {
+  color: var(--dropjs-muted);
+}
+
+/* ---- List ---- */
+
+.dropjs-list {
+  position: relative; /* lets the script measure item positions */
+  max-height: min(15rem, 50vh);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  outline: none;
+}
+
+.dropjs-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.5rem 0.65rem;
+  white-space: nowrap;
+  border-radius: max(4px, calc(var(--dropjs-radius) - 4px));
+  cursor: pointer;
+  user-select: none;
+}
+
+.dropjs-item.is-active {
+  /* a tint of the accent (override with --dropjs-active) */
+  background: var(--dropjs-active, color-mix(in srgb, var(--dropjs-accent) 16%, var(--dropjs-bg)));
+}
+
+.dropjs-item.is-selected {
+  color: var(--dropjs-accent);
+  font-weight: 600;
+}
+
+/* check mark on the chosen option */
+.dropjs-item.is-selected::after {
+  content: "";
+  flex: none;
+  width: 0.3rem;
+  height: 0.6rem;
+  border: solid currentColor;
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg) translate(-1px, -1px);
+}
+
+.dropjs-divider {
+  height: 1px;
+  margin: 0.3rem 0.25rem;
+  background: var(--dropjs-border);
+}
+
+.dropjs-empty {
+  padding: 0.75rem 0.65rem;
+  text-align: center;
+  font-size: 0.9rem;
+  color: var(--dropjs-muted);
+}
+
+/* bigger touch targets on phones */
+@media (max-width: 480px) {
+  .dropjs-item {
+    padding: 0.7rem 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dropjs-trigger,
+  .dropjs-chevron,
+  .dropjs-menu {
+    transition-duration: 0.01ms !important;
+    transition-delay: 0s !important;
+  }
+}
